@@ -1,0 +1,2466 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Speed Race - Balapan Matematika SD 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #cce3d8;
+        }
+        .font-display {
+            font-family: 'Fredoka', sans-serif;
+        }
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        /* Custom 3D Buttons matching screenshot */
+        .btn-3d-orange {
+            background: linear-gradient(180deg, #ff7a18 0%, #ea580c 100%);
+            box-shadow: 0 6px 0 #9a3412, 0 10px 15px rgba(0,0,0,0.18);
+            transition: all 0.12s ease;
+        }
+        .btn-3d-orange:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+            box-shadow: 0 7px 0 #9a3412, 0 12px 18px rgba(0,0,0,0.22);
+        }
+        .btn-3d-orange:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #9a3412, 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn-3d-blue {
+            background: linear-gradient(180deg, #229ed9 0%, #0284c7 100%);
+            box-shadow: 0 6px 0 #0369a1, 0 10px 15px rgba(0,0,0,0.15);
+            transition: all 0.12s ease;
+        }
+        .btn-3d-blue:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+        }
+        .btn-3d-blue:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #0369a1, 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn-3d-gray {
+            background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+            box-shadow: 0 6px 0 #94a3b8, 0 10px 15px rgba(0,0,0,0.1);
+            transition: all 0.12s ease;
+        }
+        .btn-3d-gray:hover {
+            filter: brightness(1.03);
+            transform: translateY(-1px);
+        }
+        .btn-3d-gray:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #94a3b8, 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Answer Option Buttons */
+        .ans-btn {
+            background: linear-gradient(180deg, #29b6f6 0%, #0288d1 100%);
+            box-shadow: 0 5px 0 #01579b, 0 6px 12px rgba(2, 136, 209, 0.25);
+            transition: all 0.1s ease;
+        }
+        .ans-btn:hover {
+            filter: brightness(1.07);
+            transform: translateY(-1px);
+        }
+        .ans-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #01579b;
+        }
+        .ans-btn.wrong {
+            background: linear-gradient(180deg, #f06292 0%, #d81b60 100%) !important;
+            box-shadow: 0 5px 0 #880e4f, 0 6px 12px rgba(216, 27, 96, 0.3) !important;
+        }
+        .ans-btn.correct {
+            background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%) !important;
+            box-shadow: 0 5px 0 #14532d, 0 6px 12px rgba(22, 163, 74, 0.3) !important;
+        }
+
+        /* Mode selection cards */
+        .mode-card {
+            border: 2px solid #cbd5e1;
+            background: #f8fafc;
+            transition: all 0.18s ease;
+        }
+        .mode-card:hover {
+            border-color: #7dd3fc;
+            background: #f0f9ff;
+        }
+        .mode-card.active {
+            border: 2.5px solid #00a8e8;
+            background: #f0f9ff;
+            box-shadow: 0 0 0 3px rgba(0, 168, 232, 0.15);
+        }
+
+        /* Glass / Menu Panel */
+        .menu-panel {
+            background: rgba(255, 255, 255, 0.96);
+            border: 4px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes pulse-fast {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+        }
+        .animate-pop {
+            animation: pulse-fast 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="relative select-none">
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Top-Left Camera Orbit Hint during Race -->
+    <div id="camera-hint" class="hidden fixed top-16 left-4 z-20 pointer-events-none bg-slate-900/60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
+        🎥 Geser layar / mouse untuk memutar sudut kamera • Klik 2x untuk reset
+    </div>
+
+    <!-- ==================== MAIN MENU OVERLAY ==================== -->
+    <div id="menu-screen" class="fixed inset-0 z-30 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-slate-900/15 backdrop-blur-[2px]">
+        <div class="menu-panel w-full max-w-4xl rounded-[28px] p-5 sm:p-8 my-auto">
+            <!-- Header Title -->
+            <div class="text-center mb-5">
+                <h1 class="font-display text-3xl sm:text-5xl font-bold tracking-wide text-[#f58216] drop-shadow-sm">
+                    MATH SPEED RACE
+                </h1>
+                <p class="text-xs sm:text-sm font-extrabold tracking-widest text-[#1da1db] mt-1 uppercase">
+                    BALAPAN MATEMATIKA SD 3D • EDISI SIRKUIT REALISTIK
+                </p>
+            </div>
+
+            <!-- 4 Game Mode Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                <!-- Quick Race -->
+                <button type="button" onclick="selectMode('quick')" id="mode-quick" class="mode-card active rounded-2xl p-3.5 text-center flex flex-col items-center justify-center cursor-pointer">
+                    <div class="text-2xl sm:text-3xl mb-1">🏁</div>
+                    <div class="font-extrabold text-slate-800 text-sm sm:text-base">Quick Race</div>
+                    <p class="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug">
+                        Balapan 1 putaran melawan 2 mobil sport AI
+                    </p>
+                </button>
+
+                <!-- 2 Player Split-Screen -->
+                <button type="button" onclick="selectMode('versus')" id="mode-versus" class="mode-card rounded-2xl p-3.5 text-center flex flex-col items-center justify-center cursor-pointer">
+                    <div class="text-2xl sm:text-3xl mb-1">⚔️</div>
+                    <div class="font-extrabold text-slate-800 text-sm sm:text-base">2 Player Split-Screen</div>
+                    <p class="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug">
+                        Duel langsung 2 pemain di jalur sirkuit yang sama!
+                    </p>
+                </button>
+
+                <!-- Championship -->
+                <button type="button" onclick="selectMode('championship')" id="mode-championship" class="mode-card rounded-2xl p-3.5 text-center flex flex-col items-center justify-center cursor-pointer">
+                    <div class="text-2xl sm:text-3xl mb-1">🏆</div>
+                    <div class="font-extrabold text-slate-800 text-sm sm:text-base">Championship</div>
+                    <p class="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug">
+                        Balapan panjang 2 putaran, soal makin menantang
+                    </p>
+                </button>
+
+                <!-- Solo Time Attack -->
+                <button type="button" onclick="selectMode('solo')" id="mode-solo" class="mode-card rounded-2xl p-3.5 text-center flex flex-col items-center justify-center cursor-pointer">
+                    <div class="text-2xl sm:text-3xl mb-1">⏱️</div>
+                    <div class="font-extrabold text-slate-800 text-sm sm:text-base">Solo Time Attack</div>
+                    <p class="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug">
+                        Kejar rekor waktu tercepat tanpa lawan AI
+                    </p>
+                </button>
+            </div>
+
+            <!-- Configuration Grid Row 1 -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-3">
+                <!-- Nama Pemain 1 -->
+                <div id="p1-name-container" class="bg-rose-50/90 border-2 border-rose-300 rounded-2xl p-3 shadow-sm">
+                    <label id="label-player1-name" class="block text-[11px] font-extrabold text-rose-700 uppercase tracking-wider mb-1.5">
+                        🏎️ NAMA PEMAIN 1
+                    </label>
+                    <input id="input-player-name" type="text" value="Pemain 1" placeholder="Ketik Nama Pemain 1..." maxlength="18"
+                        class="w-full bg-white border border-rose-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-rose-500" />
+                </div>
+
+                <!-- Tingkat Kelas SD -->
+                <div class="bg-slate-50/90 border border-slate-200 rounded-2xl p-3">
+                    <label class="block text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                        TINGKAT KELAS SD
+                    </label>
+                    <select id="select-grade" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-sky-500">
+                        <option value="1-2">Kelas 1 - 2 (Bilangan 0 - 20)</option>
+                        <option value="3-4">Kelas 3 - 4 (Bilangan 0 - 100)</option>
+                        <option value="5-6">Kelas 5 - 6 (Bilangan Ratusan)</option>
+                    </select>
+                </div>
+
+                <!-- Operasi Hitung -->
+                <div class="bg-slate-50/90 border border-slate-200 rounded-2xl p-3">
+                    <label class="block text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                        OPERASI HITUNG
+                    </label>
+                    <select id="select-operation" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-sky-500">
+                        <option value="add">1. Penjumlahan (+)</option>
+                        <option value="sub">2. Pengurangan (-)</option>
+                        <option value="mul">3. Perkalian (×)</option>
+                        <option value="div">4. Pembagian (÷)</option>
+                        <option value="mix" selected>5. Campuran</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Configuration Grid Row 2 (Player 2 Name & AI Difficulty) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+                <!-- Nama Pemain 2 (Tampil saat mode 2 Player) -->
+                <div id="p2-name-container" class="hidden bg-sky-50/90 border-2 border-sky-300 rounded-2xl p-3 shadow-sm">
+                    <label id="label-player2-name" class="block text-[11px] font-extrabold text-sky-700 uppercase tracking-wider mb-1.5">
+                        🏎️ NAMA PEMAIN 2 (KANAN)
+                    </label>
+                    <input id="input-player2-name" type="text" value="Pemain 2" placeholder="Ketik Nama Pemain 2..." maxlength="18"
+                        class="w-full bg-white border border-sky-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-sky-500" />
+                </div>
+
+                <div class="bg-slate-50/90 border border-slate-200 rounded-2xl p-3">
+                    <label class="block text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                        KESULITAN LAWAN AI
+                    </label>
+                    <select id="select-ai-diff" class="w-full bg-white border border-sky-500 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none">
+                        <option value="easy">Mudah (Santai)</option>
+                        <option value="normal" selected>Normal (Kompetitif)</option>
+                        <option value="hard">Sulit (Cepat & Agresif)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Audio & Volume Controls Row -->
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-6 px-1">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <button id="btn-toggle-music" type="button" onclick="toggleMusic()"
+                        class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold border-2 border-emerald-400 bg-emerald-50 text-emerald-700 flex items-center gap-1.5 transition">
+                        <span>🎵</span> <span id="music-label">Musik: ON</span>
+                    </button>
+                    <button id="btn-toggle-sfx" type="button" onclick="toggleSfx()"
+                        class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold border-2 border-emerald-400 bg-emerald-50 text-emerald-700 flex items-center gap-1.5 transition cursor-pointer">
+                        <span>🔊</span> <span id="sfx-label">Efek Suara: ON</span>
+                    </button>
+                    <button id="btn-menu-fullscreen" type="button" onclick="toggleFullscreen()"
+                        class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold border-2 border-sky-400 bg-sky-50 text-sky-700 hover:bg-sky-100 flex items-center gap-1.5 transition cursor-pointer">
+                        <span id="menu-fs-icon">⛶</span> <span id="menu-fs-label">Layar Penuh</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xs sm:text-sm font-bold text-slate-700">Volume:</span>
+                    <input id="volume-slider" type="range" min="0" max="100" value="80" oninput="updateVolume(this.value)"
+                        class="w-28 sm:w-36 accent-blue-600 cursor-pointer h-2 bg-slate-200 rounded-lg" />
+                </div>
+            </div>
+
+            <!-- Main Action Buttons Row -->
+            <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+                <button type="button" onclick="startRace()"
+                    class="btn-3d-orange text-white font-extrabold text-sm sm:text-base px-7 py-3.5 rounded-2xl flex items-center gap-2 cursor-pointer">
+                    <span>🚀</span> <span>MULAI BALAPAN!</span>
+                </button>
+
+                <button type="button" onclick="openModal('modal-howto')"
+                    class="btn-3d-blue text-white font-extrabold text-sm sm:text-base px-6 py-3.5 rounded-2xl flex items-center gap-2 cursor-pointer">
+                    <span>📖</span> <span>Cara Bermain</span>
+                </button>
+
+                <button type="button" onclick="openLeaderboard()"
+                    class="btn-3d-gray text-slate-800 font-extrabold text-sm sm:text-base px-6 py-3.5 rounded-2xl flex items-center gap-2 cursor-pointer">
+                    <span>🏅</span> <span>Leaderboard</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== IN-GAME HUD ==================== -->
+    <div id="race-hud" class="hidden fixed inset-0 z-20 pointer-events-none flex flex-col justify-between p-2.5 sm:p-4">
+
+        <!-- TOP HUD BAR -->
+        <div class="flex flex-wrap items-start justify-between gap-2 w-full">
+            <!-- Top-Left Stats Pill -->
+            <div class="pointer-events-auto bg-white/95 backdrop-blur-md rounded-2xl px-3.5 py-2 shadow-lg border border-white flex items-center gap-3 sm:gap-4">
+                <!-- Rank Badge -->
+                <div id="hud-rank-badge" class="bg-gradient-to-b from-amber-400 to-orange-500 text-white font-display font-bold text-base sm:text-xl px-3 py-1 rounded-xl shadow-sm">
+                    3/3
+                </div>
+                <!-- Nama Pemain -->
+                <div class="border-r border-slate-200 pr-3">
+                    <div id="hud-player-label" class="text-[9px] sm:text-[10px] font-extrabold text-rose-500 uppercase tracking-wider">PEMAIN 1</div>
+                    <div id="hud-player-name" class="font-extrabold text-slate-800 text-xs sm:text-sm truncate max-w-[110px] sm:max-w-[150px]">Pemain 1</div>
+                </div>
+                <!-- Waktu Balap -->
+                <div>
+                    <div class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">WAKTU BALAP</div>
+                    <div id="hud-time" class="font-extrabold text-slate-800 text-xs sm:text-base tabular-nums">00:00.000</div>
+                </div>
+                <!-- Skor -->
+                <div>
+                    <div class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SKOR</div>
+                    <div id="hud-score" class="font-extrabold text-slate-800 text-xs sm:text-base tabular-nums">0</div>
+                </div>
+                <!-- Benar / Soal -->
+                <div>
+                    <div class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">BENAR / SOAL</div>
+                    <div id="hud-accuracy" class="font-extrabold text-slate-800 text-xs sm:text-base tabular-nums">0/0 (0%)</div>
+                </div>
+            </div>
+
+            <!-- Top-Center Track Progress Pill -->
+            <div class="pointer-events-auto bg-white/95 backdrop-blur-md rounded-2xl px-4 py-2 shadow-lg border border-white w-full sm:w-96 order-3 sm:order-2">
+                <div class="flex items-center justify-between text-[10px] sm:text-xs font-extrabold text-slate-600 mb-1.5">
+                    <span id="hud-mode-title" class="uppercase">QUICK RACE (1 PUTARAN)</span>
+                    <span id="hud-distance">Sisa Jarak: 1200 m</span>
+                </div>
+                <!-- Progress Track Bar with Car Markers -->
+                <div class="relative w-full h-3 bg-slate-200 rounded-full overflow-visible flex items-center">
+                    <div id="hud-progress-fill" class="h-full bg-gradient-to-r from-cyan-400 to-sky-500 rounded-full transition-all duration-100" style="width: 0%"></div>
+                    <!-- AI 2 Marker (Green - #3) -->
+                    <div id="marker-ai2" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow transition-all duration-100" style="left: 0%">3</div>
+                    <!-- AI 1 / Player 2 Marker (Blue - #2) -->
+                    <div id="marker-ai1" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-sky-500 text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow transition-all duration-100" style="left: 0%">2</div>
+                    <!-- Player 1 Marker (Pink/Red - #1) -->
+                    <div id="marker-player" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow-md z-10 transition-all duration-100" style="left: 0%">1</div>
+                </div>
+            </div>
+
+            <!-- Top-Right Controls Pill -->
+            <div class="pointer-events-auto bg-white/95 backdrop-blur-md rounded-2xl p-1.5 shadow-lg border border-white flex items-center gap-2 order-2 sm:order-3">
+                <button type="button" onclick="toggleMusic()" id="hud-music-btn"
+                    class="w-9 h-9 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm font-bold hover:bg-emerald-100 transition cursor-pointer" title="Toggle Musik">
+                    🎵
+                </button>
+                <button type="button" onclick="toggleFullscreen()" id="hud-fullscreen-btn"
+                    class="w-9 h-9 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-700 flex items-center justify-center text-sm font-extrabold hover:bg-sky-100 transition cursor-pointer" title="Layar Penuh (Fullscreen)">
+                    ⛶
+                </button>
+                <button type="button" onclick="togglePause()"
+                    class="px-3.5 h-9 rounded-xl border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 transition cursor-pointer">
+                    <span>⏸️</span> <span>Pause</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- VERTICAL SPLIT SCREEN DIVIDER LINE -->
+        <div id="split-divider" class="hidden fixed inset-y-0 left-1/2 -translate-x-1/2 w-1.5 bg-white/80 shadow-[0_0_15px_rgba(0,0,0,0.45)] z-10 pointer-events-none"></div>
+
+        <!-- CENTER COUNTDOWN / TURBO BANNER -->
+        <div id="center-banner" class="hidden self-center my-auto pointer-events-none text-center z-30">
+            <div id="countdown-text" class="font-display text-6xl sm:text-8xl font-bold text-white drop-shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
+                3
+            </div>
+        </div>
+
+        <!-- BOTTOM HUD BAR: 1 PLAYER (SPEEDOMETER + MATH PANEL) -->
+        <div id="bottom-hud-1p" class="w-full max-w-5xl mx-auto flex flex-col sm:flex-row items-stretch justify-center gap-2.5 sm:gap-3.5">
+
+            <!-- Left Dark Card: Speedometer Gauge -->
+            <div class="pointer-events-auto bg-[#1e2631] border-2 border-white/80 rounded-2xl p-3 sm:w-44 flex sm:flex-col items-center justify-between sm:justify-center shadow-xl">
+                <!-- SVG Semi-Circle Gauge -->
+                <div class="relative w-28 sm:w-32 h-16 sm:h-20 flex items-end justify-center">
+                    <svg viewBox="0 0 120 70" class="w-full h-full overflow-visible">
+                        <!-- Red Left Arc -->
+                        <path d="M 15 60 A 45 45 0 0 1 38 21" fill="none" stroke="#ef4444" stroke-width="10" stroke-linecap="round" />
+                        <!-- Green Middle Arc -->
+                        <path d="M 38 21 A 45 45 0 0 1 82 21" fill="none" stroke="#22c55e" stroke-width="10" />
+                        <!-- Orange Right Arc -->
+                        <path d="M 82 21 A 45 45 0 0 1 105 60" fill="none" stroke="#f97316" stroke-width="10" stroke-linecap="round" />
+                        <!-- Gauge Needle -->
+                        <g id="speed-needle" transform="rotate(-35 60 60)" style="transition: transform 0.15s ease-out;">
+                            <line x1="60" y1="60" x2="60" y2="20" stroke="#fb7185" stroke-width="4" stroke-linecap="round" />
+                        </g>
+                        <!-- Center Pivot -->
+                        <circle cx="60" cy="60" r="6" fill="#ffffff" />
+                    </svg>
+                </div>
+
+                <!-- Speed Readout -->
+                <div class="text-center sm:mt-1">
+                    <div id="hud-speed" class="font-display text-2xl sm:text-3xl font-bold text-[#38bdf8] leading-none">
+                        65
+                    </div>
+                    <div class="text-[9px] font-extrabold text-slate-400 tracking-widest uppercase mt-0.5">
+                        KM / JAM
+                    </div>
+                </div>
+
+                <!-- Speed State Pill -->
+                <div id="hud-speed-status" class="mt-0 sm:mt-2 px-3 py-1 rounded-lg bg-slate-800 text-slate-300 text-[10px] font-extrabold uppercase tracking-wider w-28 sm:w-full text-center">
+                    NORMAL
+                </div>
+            </div>
+
+            <!-- Right White Card: Math Problem & 4 Answer Choices -->
+            <div class="pointer-events-auto flex-1 bg-white/95 backdrop-blur-md border-2 border-white rounded-2xl p-3 sm:p-4 shadow-xl flex flex-col justify-between">
+                <!-- Top Subheader -->
+                <div class="flex flex-wrap items-center justify-between gap-1 text-[11px] sm:text-xs font-extrabold text-slate-500 mb-1.5">
+                    <div class="flex items-center gap-2">
+                        <span id="hud-1p-racer-badge" class="px-2.5 py-0.5 rounded-lg bg-rose-600 text-white font-extrabold text-[11px] shadow-sm">
+                            🏎️ PEMAIN 1: Pemain 1
+                        </span>
+                        <span id="hud-question-meta">Kelas 1-2 • Campuran</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="hud-streak-badge" class="hidden px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-extrabold">
+                            🔥 Streak 2x
+                        </span>
+                        <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold">
+                            ⏱️ Jawab Cepat = Turbo!
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Question Display Box -->
+                <div class="bg-[#f4f8fb] border border-slate-200/80 rounded-xl px-4 py-2.5 mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                    <div id="hud-question-text" class="font-extrabold text-slate-900 text-2xl sm:text-3xl tracking-tight">
+                        14 - 9 = ?
+                    </div>
+                    <div id="hud-feedback-text" class="text-xs sm:text-sm font-extrabold text-slate-500">
+                        Pilih jawaban yang benar (Tombol 1 - 4)
+                    </div>
+                </div>
+
+                <!-- 4 Answer Choices Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <button type="button" onclick="submitAnswer(0)" id="ans-btn-0" class="ans-btn relative h-12 sm:h-14 rounded-xl text-white font-display font-bold text-xl sm:text-2xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1.5 left-2 w-5 h-5 rounded-md bg-black/20 text-[11px] font-sans font-extrabold flex items-center justify-center">1</span>
+                        <span id="ans-val-0">6</span>
+                    </button>
+
+                    <button type="button" onclick="submitAnswer(1)" id="ans-btn-1" class="ans-btn relative h-12 sm:h-14 rounded-xl text-white font-display font-bold text-xl sm:text-2xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1.5 left-2 w-5 h-5 rounded-md bg-black/20 text-[11px] font-sans font-extrabold flex items-center justify-center">2</span>
+                        <span id="ans-val-1">8</span>
+                    </button>
+
+                    <button type="button" onclick="submitAnswer(2)" id="ans-btn-2" class="ans-btn relative h-12 sm:h-14 rounded-xl text-white font-display font-bold text-xl sm:text-2xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1.5 left-2 w-5 h-5 rounded-md bg-black/20 text-[11px] font-sans font-extrabold flex items-center justify-center">3</span>
+                        <span id="ans-val-2">5</span>
+                    </button>
+
+                    <button type="button" onclick="submitAnswer(3)" id="ans-btn-3" class="ans-btn relative h-12 sm:h-14 rounded-xl text-white font-display font-bold text-xl sm:text-2xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1.5 left-2 w-5 h-5 rounded-md bg-black/20 text-[11px] font-sans font-extrabold flex items-center justify-center">4</span>
+                        <span id="ans-val-3">1</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM HUD BAR: 2 PLAYER SPLIT-SCREEN (LEFT P1 & RIGHT P2) -->
+        <div id="bottom-hud-2p" class="hidden w-full grid grid-cols-2 gap-3 sm:gap-6 px-1 sm:px-3">
+            <!-- PLAYER 1 PANEL (LEFT - RED CAR) -->
+            <div class="pointer-events-auto bg-white/95 backdrop-blur-md border-2 border-rose-400 rounded-2xl p-2.5 sm:p-3.5 shadow-xl flex flex-col justify-between">
+                <div class="flex flex-wrap items-center justify-between gap-1 mb-1.5">
+                    <div class="flex items-center gap-1.5">
+                        <span id="p1-hud-rank" class="px-2 py-0.5 rounded-lg bg-rose-600 text-white font-display font-bold text-xs sm:text-sm">#1</span>
+                        <span id="p1-hud-name" class="font-extrabold text-rose-700 text-xs sm:text-sm truncate max-w-[140px] sm:max-w-[210px]">PEMAIN 1: Pemain 1</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[10px] sm:text-xs font-extrabold">
+                        <span id="p1-hud-speed" class="px-2 py-0.5 rounded-md bg-slate-800 text-sky-400">65 KM/J</span>
+                        <span id="p1-hud-score" class="text-emerald-600">0 Poin</span>
+                    </div>
+                </div>
+
+                <div class="bg-[#fff1f2] border border-rose-200 rounded-xl px-3 py-2 mb-2 flex items-center justify-between gap-2">
+                    <div id="p1-question-text" class="font-extrabold text-slate-900 text-xl sm:text-2xl tracking-tight">12 + 5 = ?</div>
+                    <div id="p1-feedback-text" class="text-[10px] sm:text-xs font-extrabold text-rose-600 text-right">Tombol 1 - 4</div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-1.5 sm:gap-2">
+                    <button type="button" onclick="submitAnswerP1(0)" id="p1-ans-btn-0" class="ans-btn relative h-11 sm:h-12 rounded-xl text-white font-display font-bold text-lg sm:text-xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1 left-1.5 w-4 h-4 rounded bg-black/25 text-[9px] font-sans font-extrabold flex items-center justify-center">1</span>
+                        <span id="p1-ans-val-0">17</span>
+                    </button>
+                    <button type="button" onclick="submitAnswerP1(1)" id="p1-ans-btn-1" class="ans-btn relative h-11 sm:h-12 rounded-xl text-white font-display font-bold text-lg sm:text-xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1 left-1.5 w-4 h-4 rounded bg-black/25 text-[9px] font-sans font-extrabold flex items-center justify-center">2</span>
+                        <span id="p1-ans-val-1">15</span>
+                    </button>
+                    <button type="button" onclick="submitAnswerP1(2)" id="p1-ans-btn-2" class="ans-btn relative h-11 sm:h-12 rounded-xl text-white font-display font-bold text-lg sm:text-xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1 left-1.5 w-4 h-4 rounded bg-black/25 text-[9px] font-sans font-extrabold flex items-center justify-center">3</span>
+                        <span id="p1-ans-val-2">19</span>
+                    </button>
+                    <button type="button" onclick="submitAnswerP1(3)" id="p1-ans-btn-3" class="ans-btn relative h-11 sm:h-12 rounded-xl text-white font-display font-bold text-lg sm:text-xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1 left-1.5 w-4 h-4 rounded bg-black/25 text-[9px] font-sans font-extrabold flex items-center justify-center">4</span>
+                        <span id="p1-ans-val-3">14</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PLAYER 2 PANEL (RIGHT - CYAN CAR) -->
+            <div class="pointer-events-auto bg-white/95 backdrop-blur-md border-2 border-sky-400 rounded-2xl p-2.5 sm:p-3.5 shadow-xl flex flex-col justify-between">
+                <div class="flex flex-wrap items-center justify-between gap-1 mb-1.5">
+                    <div class="flex items-center gap-1.5">
+                        <span id="p2-hud-rank" class="px-2 py-0.5 rounded-lg bg-sky-600 text-white font-display font-bold text-xs sm:text-sm">#2</span>
+                        <span id="p2-hud-name" class="font-extrabold text-sky-700 text-xs sm:text-sm truncate max-w-[140px] sm:max-w-[210px]">PEMAIN 2: Pemain 2</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[10px] sm:text-xs font-extrabold">
+                        <span id="p2-hud-speed" class="px-2 py-0.5 rounded-md bg-slate-800 text-sky-400">65 KM/J</span>
+                        <span id="p2-hud-score" class="text-emerald-600">0 Poin</span>
+                    </div>
+                </div>
+
+                <div class="bg-[#f0f9ff] border border-sky-200 rounded-xl px-3 py-2 mb-2 flex items-center justify-between gap-2">
+                    <div id="p2-question-text" class="font-extrabold text-slate-900 text-xl sm:text-2xl tracking-tight">15 - 7 = ?</div>
+                    <div id="p2-feedback-text" class="text-[10px] sm:text-xs font-extrabold text-sky-600 text-right">Tombol 7 - 0</div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-1.5 sm:gap-2">
+                    <button type="button" onclick="submitAnswerP2(0)" id="p2-ans-btn-0" class="ans-btn relative h-11 sm:h-12 rounded-xl text-white font-display font-bold text-lg sm:text-xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1 left-1.5 w-4 h-4 rounded bg-black/25 text-[9px] font-sans font-extrabold flex items-center justify-center">7</span>
+                        <span id="p2-ans-val-0">8</span>
+                    </button>
+                    <button type="button" onclick="submitAnswerP2(1)" id="p2-ans-btn-1" class="ans-btn relative h-11 sm:h-12 rounded-xl text-white font-display font-bold text-lg sm:text-xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1 left-1.5 w-4 h-4 rounded bg-black/25 text-[9px] font-sans font-extrabold flex items-center justify-center">8</span>
+                        <span id="p2-ans-val-1">6</span>
+                    </button>
+                    <button type="button" onclick="submitAnswerP2(2)" id="p2-ans-btn-2" class="ans-btn relative h-11 sm:h-12 rounded-xl text-white font-display font-bold text-lg sm:text-xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1 left-1.5 w-4 h-4 rounded bg-black/25 text-[9px] font-sans font-extrabold flex items-center justify-center">9</span>
+                        <span id="p2-ans-val-2">9</span>
+                    </button>
+                    <button type="button" onclick="submitAnswerP2(3)" id="p2-ans-btn-3" class="ans-btn relative h-11 sm:h-12 rounded-xl text-white font-display font-bold text-lg sm:text-xl flex items-center justify-center cursor-pointer">
+                        <span class="absolute top-1 left-1.5 w-4 h-4 rounded bg-black/25 text-[9px] font-sans font-extrabold flex items-center justify-center">0</span>
+                        <span id="p2-ans-val-3">5</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PAUSE MODAL ==================== -->
+    <div id="modal-pause" class="hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="menu-panel max-w-md w-full rounded-3xl p-6 text-center">
+            <div class="text-4xl mb-2">⏸️</div>
+            <h2 class="font-display text-2xl font-bold text-slate-800">BALAPAN DIJEDA</h2>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1 mb-6">Istirahat sejenak atau lanjutkan balapan menuju garis finis!</p>
+            <div class="flex flex-col gap-3">
+                <button type="button" onclick="togglePause()" class="btn-3d-orange text-white font-extrabold py-3 rounded-2xl cursor-pointer">
+                    ▶️ LANJUTKAN BALAPAN
+                </button>
+                <button type="button" onclick="restartRace()" class="btn-3d-blue text-white font-extrabold py-3 rounded-2xl cursor-pointer">
+                    🔄 ULANGI BALAPAN
+                </button>
+                <button type="button" onclick="backToMenu()" class="btn-3d-gray text-slate-800 font-extrabold py-3 rounded-2xl cursor-pointer">
+                    🏠 KEMBALI KE MENU UTAMA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== CARA BERMAIN MODAL ==================== -->
+    <div id="modal-howto" class="hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="menu-panel max-w-lg w-full rounded-3xl p-6 sm:p-7">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-display text-2xl font-bold text-[#f58216]">📖 Cara Bermain</h2>
+                <button type="button" onclick="closeModal('modal-howto')" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 font-bold text-slate-700 cursor-pointer">✕</button>
+            </div>
+            <ul class="space-y-3 text-xs sm:text-sm text-slate-700 font-medium leading-relaxed">
+                <li class="flex items-start gap-2.5">
+                    <span class="text-lg">🏎️</span>
+                    <span><strong>Laju Otomatis & Kemudi Sirkuit:</strong> Mobil balapmu melaju mengikuti sirkuit 3D secara otomatis dengan kecepatan dasar <strong>65 KM/Jam</strong>.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <span class="text-lg">🚀</span>
+                    <span><strong>Jawab Benar = Turbo Boost:</strong> Setiap jawaban matematika yang benar akan menyalakan <strong>Nitro Turbo</strong> hingga <strong>165 KM/Jam</strong> dan menambah skormu!</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <span class="text-lg">⚠️</span>
+                    <span><strong>Hati-Hati Jawaban Salah:</strong> Jika memilih jawaban yang kurang tepat, mobil akan sedikit melambat. Kamu tetap bisa memilih jawaban lain sampai benar!</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <span class="text-lg">⌨️</span>
+                    <span><strong>Kontrol Cepat (1 & 2 Pemain):</strong>
+                        <br>• <strong>Pemain 1 (Kiri):</strong> Klik jawaban kiri atau tekan tombol angka <strong>1, 2, 3, 4</strong> di keyboard.
+                        <br>• <strong>Pemain 2 (Kanan - Mode Split-Screen):</strong> Klik jawaban kanan atau tekan tombol angka <strong>7, 8, 9, 0</strong> di keyboard.</span>
+                </li>
+            </ul>
+            <div class="mt-6 text-right">
+                <button type="button" onclick="closeModal('modal-howto')" class="btn-3d-blue text-white font-extrabold px-6 py-2.5 rounded-xl cursor-pointer">
+                    Siap Mengerti!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LEADERBOARD MODAL ==================== -->
+    <div id="modal-leaderboard" class="hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="menu-panel max-w-lg w-full rounded-3xl p-6 sm:p-7">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-display text-2xl font-bold text-[#f58216]">🏅 Papan Juara (Leaderboard)</h2>
+                <button type="button" onclick="closeModal('modal-leaderboard')" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 font-bold text-slate-700 cursor-pointer">✕</button>
+            </div>
+            <div id="leaderboard-list" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
+            <div class="mt-6 flex justify-between items-center">
+                <button type="button" onclick="clearLeaderboard()" class="text-xs font-bold text-rose-600 hover:underline cursor-pointer">
+                    Hapus Riwayat Skor
+                </button>
+                <button type="button" onclick="closeModal('modal-leaderboard')" class="btn-3d-blue text-white font-extrabold px-6 py-2.5 rounded-xl cursor-pointer">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== FINISH / PODIUM MODAL ==================== -->
+    <div id="modal-finish" class="hidden fixed inset-0 z-40 bg-slate-900/55 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="menu-panel max-w-lg w-full rounded-3xl p-6 sm:p-8 text-center">
+            <div id="finish-trophy" class="text-5xl sm:text-6xl mb-2">🏆</div>
+            <h2 id="finish-title" class="font-display text-3xl sm:text-4xl font-bold text-[#f58216]">JUARA 1!</h2>
+            <p id="finish-subtitle" class="text-xs sm:text-sm font-bold text-slate-600 mt-1 mb-5">
+                Luar biasa! Kamu menaklukkan sirkuit matematika!
+            </p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6 text-left">
+                <div class="bg-slate-100 rounded-2xl p-3">
+                    <div class="text-[10px] font-extrabold text-slate-400 uppercase">POSISI AKHIR</div>
+                    <div id="finish-rank" class="font-display text-xl font-bold text-slate-800 mt-0.5">#1 / 3</div>
+                </div>
+                <div class="bg-slate-100 rounded-2xl p-3">
+                    <div class="text-[10px] font-extrabold text-slate-400 uppercase">WAKTU FINIS</div>
+                    <div id="finish-time" class="font-display text-xl font-bold text-slate-800 mt-0.5">00:42.10</div>
+                </div>
+                <div class="bg-slate-100 rounded-2xl p-3">
+                    <div class="text-[10px] font-extrabold text-slate-400 uppercase">TOTAL SKOR</div>
+                    <div id="finish-score" class="font-display text-xl font-bold text-emerald-600 mt-0.5">450</div>
+                </div>
+                <div class="bg-slate-100 rounded-2xl p-3">
+                    <div class="text-[10px] font-extrabold text-slate-400 uppercase">AKURASI SOAL</div>
+                    <div id="finish-acc" class="font-display text-xl font-bold text-sky-600 mt-0.5">100%</div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-3">
+                <button type="button" onclick="restartRace()" class="btn-3d-orange text-white font-extrabold px-6 py-3 rounded-2xl cursor-pointer">
+                    🚀 BALAPAN LAGI
+                </button>
+                <button type="button" onclick="backToMenu()" class="btn-3d-blue text-white font-extrabold px-6 py-3 rounded-2xl cursor-pointer">
+                    🏠 MENU UTAMA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================================================
+           1. WEB AUDIO SYNTHESIZER (BACKGROUND MUSIC & SOUND EFFECTS)
+           ========================================================================= */
+        const AudioEngine = {
+            ctx: null,
+            musicOn: true,
+            sfxOn: true,
+            volume: 0.8,
+            musicTimer: null,
+            noteStep: 0,
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+
+            playTone(freq, duration = 0.15, type = 'triangle', gainScale = 0.25) {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, now);
+
+                const finalVol = Math.max(0.0001, this.volume * gainScale);
+                gain.gain.setValueAtTime(finalVol, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + duration);
+            },
+
+            playCorrect() {
+                if (!this.sfxOn) return;
+                this.init();
+                this.playTone(523.25, 0.1, 'sine', 0.3);
+                setTimeout(() => this.playTone(659.25, 0.1, 'sine', 0.3), 75);
+                setTimeout(() => this.playTone(783.99, 0.2, 'triangle', 0.35), 150);
+            },
+
+            playWrong() {
+                if (!this.sfxOn) return;
+                this.init();
+                this.playTone(220, 0.15, 'sawtooth', 0.25);
+                setTimeout(() => this.playTone(174.61, 0.22, 'sawtooth', 0.25), 110);
+            },
+
+            playCountdown(isGo = false) {
+                if (!this.sfxOn) return;
+                this.init();
+                if (isGo) {
+                    this.playTone(880, 0.35, 'square', 0.3);
+                } else {
+                    this.playTone(440, 0.18, 'sine', 0.25);
+                }
+            },
+
+            playFinish() {
+                if (!this.sfxOn) return;
+                this.init();
+                const notes = [523.25, 659.25, 783.99, 1046.5];
+                notes.forEach((n, idx) => {
+                    setTimeout(() => this.playTone(n, 0.22, 'triangle', 0.32), idx * 110);
+                });
+            },
+
+            startMusic() {
+                this.init();
+                if (this.musicTimer) clearInterval(this.musicTimer);
+                const melody = [
+                    261.63, 329.63, 392.00, 523.25,
+                    293.66, 369.99, 440.00, 587.33,
+                    329.63, 392.00, 493.88, 659.25,
+                    261.63, 329.63, 392.00, 523.25
+                ];
+                this.musicTimer = setInterval(() => {
+                    if (!this.musicOn || !this.ctx) return;
+                    const freq = melody[this.noteStep % melody.length];
+                    this.playTone(freq, 0.16, 'sine', 0.08);
+                    this.noteStep++;
+                }, 220);
+            }
+        };
+
+        /* =========================================================================
+           2. GAME STATE & MATH QUESTION GENERATOR
+           ========================================================================= */
+        const GameState = {
+            screen: 'menu', // 'menu' | 'countdown' | 'racing' | 'paused' | 'finished'
+            mode: 'quick',  // 'quick' | 'versus' | 'championship' | 'solo'
+            playerName: 'Pemain 1',
+            player2Name: 'Pemain 2',
+            grade: '1-2',
+            operation: 'mix',
+            aiDiff: 'normal',
+
+            trackLength: 1200, // meters per lap
+            laps: 1,
+            totalDistance: 1200,
+
+            elapsedTime: 0,
+            score: 0,
+            correctCount: 0,
+            questionCount: 0,
+            streak: 0,
+
+            currentQuestion: null,
+            wrongSelectedIndices: new Set(),
+
+            // Player 2 independent state for 2P Split-Screen
+            p2: {
+                score: 0,
+                correctCount: 0,
+                questionCount: 0,
+                streak: 0,
+                currentQuestion: null,
+                wrongSelectedIndices: new Set()
+            },
+
+            // Racers array: index 0 is Player 1, 1 is Cyan Car (AI 1 or Player 2), 2 is Green AI
+            racers: []
+        };
+
+        function selectMode(mode) {
+            GameState.mode = mode;
+            ['quick', 'versus', 'championship', 'solo'].forEach(m => {
+                const el = document.getElementById('mode-' + m);
+                if (!el) return;
+                if (m === mode) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+
+            const p2Container = document.getElementById('p2-name-container');
+            const p1Label = document.getElementById('label-player1-name');
+            if (mode === 'versus') {
+                p2Container.classList.remove('hidden');
+                p1Label.textContent = '🏎️ NAMA PEMAIN 1 (KIRI)';
+            } else {
+                p2Container.classList.add('hidden');
+                p1Label.textContent = '🏎️ NAMA PEMAIN 1';
+            }
+
+            AudioEngine.init();
+            AudioEngine.playTone(587.33, 0.08, 'sine', 0.2);
+        }
+
+        function toggleMusic() {
+            AudioEngine.init();
+            AudioEngine.musicOn = !AudioEngine.musicOn;
+            const label = document.getElementById('music-label');
+            const btn = document.getElementById('btn-toggle-music');
+            const hudBtn = document.getElementById('hud-music-btn');
+
+            if (AudioEngine.musicOn) {
+                label.textContent = 'Musik: ON';
+                btn.className = 'px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold border-2 border-emerald-400 bg-emerald-50 text-emerald-700 flex items-center gap-1.5 transition';
+                hudBtn.className = 'w-9 h-9 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm font-bold hover:bg-emerald-100 transition cursor-pointer';
+                AudioEngine.startMusic();
+            } else {
+                label.textContent = 'Musik: OFF';
+                btn.className = 'px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold border-2 border-slate-300 bg-slate-100 text-slate-500 flex items-center gap-1.5 transition';
+                hudBtn.className = 'w-9 h-9 rounded-xl border-2 border-slate-300 bg-slate-100 text-slate-400 flex items-center justify-center text-sm font-bold hover:bg-slate-200 transition cursor-pointer';
+            }
+        }
+
+        function toggleSfx() {
+            AudioEngine.init();
+            AudioEngine.sfxOn = !AudioEngine.sfxOn;
+            const label = document.getElementById('sfx-label');
+            const btn = document.getElementById('btn-toggle-sfx');
+            if (AudioEngine.sfxOn) {
+                label.textContent = 'Efek Suara: ON';
+                btn.className = 'px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold border-2 border-emerald-400 bg-emerald-50 text-emerald-700 flex items-center gap-1.5 transition';
+                AudioEngine.playCorrect();
+            } else {
+                label.textContent = 'Efek Suara: OFF';
+                btn.className = 'px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold border-2 border-slate-300 bg-slate-100 text-slate-500 flex items-center gap-1.5 transition';
+            }
+        }
+
+        function updateVolume(val) {
+            AudioEngine.volume = Number(val) / 100;
+        }
+
+        function toggleFullscreen() {
+            const docEl = document.documentElement;
+            const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+
+            if (!isFs) {
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen().catch(() => {});
+                } else if (docEl.webkitRequestFullscreen) {
+                    docEl.webkitRequestFullscreen();
+                } else if (docEl.msRequestFullscreen) {
+                    docEl.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        function updateFullscreenUI() {
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+            const menuLabel = document.getElementById('menu-fs-label');
+            const menuIcon = document.getElementById('menu-fs-icon');
+            const hudBtn = document.getElementById('hud-fullscreen-btn');
+
+            if (menuLabel) menuLabel.textContent = isFs ? 'Keluar Fullscreen' : 'Layar Penuh';
+            if (menuIcon) menuIcon.textContent = isFs ? '🗗' : '⛶';
+            if (hudBtn) hudBtn.textContent = isFs ? '🗗' : '⛶';
+
+            setTimeout(onWindowResize, 100);
+        }
+
+        document.addEventListener('fullscreenchange', updateFullscreenUI);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+
+        function buildQuestionObject() {
+            const grade = GameState.grade;
+            let op = GameState.operation;
+            const ops = ['add', 'sub', 'mul', 'div'];
+            if (op === 'mix') {
+                if (grade === '1-2') {
+                    const pool = ['add', 'sub', 'add', 'sub', 'mul'];
+                    op = pool[Math.floor(Math.random() * pool.length)];
+                } else {
+                    op = ops[Math.floor(Math.random() * ops.length)];
+                }
+            }
+
+            let a = 0, b = 0, answer = 0, symbol = '+';
+
+            if (grade === '1-2') {
+                if (op === 'add') {
+                    a = randInt(2, 14);
+                    b = randInt(1, 20 - a);
+                    answer = a + b;
+                    symbol = '+';
+                } else if (op === 'sub') {
+                    a = randInt(6, 20);
+                    b = randInt(1, a - 1);
+                    answer = a - b;
+                    symbol = '-';
+                } else if (op === 'mul') {
+                    a = randInt(2, 5);
+                    b = randInt(1, 5);
+                    answer = a * b;
+                    symbol = '×';
+                } else {
+                    b = randInt(2, 5);
+                    answer = randInt(1, 5);
+                    a = b * answer;
+                    symbol = '÷';
+                }
+            } else if (grade === '3-4') {
+                if (op === 'add') {
+                    a = randInt(12, 65);
+                    b = randInt(8, 45);
+                    answer = a + b;
+                    symbol = '+';
+                } else if (op === 'sub') {
+                    a = randInt(25, 95);
+                    b = randInt(7, a - 5);
+                    answer = a - b;
+                    symbol = '-';
+                } else if (op === 'mul') {
+                    a = randInt(3, 10);
+                    b = randInt(3, 10);
+                    answer = a * b;
+                    symbol = '×';
+                } else {
+                    b = randInt(2, 9);
+                    answer = randInt(2, 10);
+                    a = b * answer;
+                    symbol = '÷';
+                }
+            } else {
+                if (op === 'add') {
+                    a = randInt(45, 240);
+                    b = randInt(25, 180);
+                    answer = a + b;
+                    symbol = '+';
+                } else if (op === 'sub') {
+                    a = randInt(80, 320);
+                    b = randInt(25, a - 15);
+                    answer = a - b;
+                    symbol = '-';
+                } else if (op === 'mul') {
+                    a = randInt(6, 15);
+                    b = randInt(4, 12);
+                    answer = a * b;
+                    symbol = '×';
+                } else {
+                    b = randInt(4, 12);
+                    answer = randInt(4, 15);
+                    a = b * answer;
+                    symbol = '÷';
+                }
+            }
+
+            const choicesSet = new Set([answer]);
+            while (choicesSet.size < 4) {
+                const offset = randInt(-6, 6);
+                let candidate = answer + offset;
+                if (candidate < 0) candidate = randInt(1, 10);
+                if (candidate !== answer) choicesSet.add(candidate);
+            }
+
+            const choices = Array.from(choicesSet).sort(() => Math.random() - 0.5);
+            return {
+                text: `${a} ${symbol} ${b} = ?`,
+                answer,
+                choices,
+                hadMistake: false
+            };
+        }
+
+        function generateMathQuestion() {
+            GameState.currentQuestion = buildQuestionObject();
+            GameState.wrongSelectedIndices.clear();
+            renderQuestionToHUD();
+        }
+
+        function generateMathQuestionP2() {
+            GameState.p2.currentQuestion = buildQuestionObject();
+            GameState.p2.wrongSelectedIndices.clear();
+            renderQuestionP2ToHUD();
+        }
+
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function renderQuestionToHUD() {
+            const q = GameState.currentQuestion;
+            document.getElementById('hud-question-text').textContent = q.text;
+            document.getElementById('p1-question-text').textContent = q.text;
+            for (let i = 0; i < 4; i++) {
+                const btn = document.getElementById('ans-btn-' + i);
+                const valSpan = document.getElementById('ans-val-' + i);
+                btn.classList.remove('wrong', 'correct', 'animate-pop');
+                valSpan.textContent = q.choices[i];
+
+                const p1Btn = document.getElementById('p1-ans-btn-' + i);
+                const p1Val = document.getElementById('p1-ans-val-' + i);
+                if (p1Btn && p1Val) {
+                    p1Btn.classList.remove('wrong', 'correct', 'animate-pop');
+                    p1Val.textContent = q.choices[i];
+                }
+            }
+        }
+
+        function renderQuestionP2ToHUD() {
+            const q = GameState.p2.currentQuestion;
+            if (!q) return;
+            document.getElementById('p2-question-text').textContent = q.text;
+            for (let i = 0; i < 4; i++) {
+                const p2Btn = document.getElementById('p2-ans-btn-' + i);
+                const p2Val = document.getElementById('p2-ans-val-' + i);
+                if (p2Btn && p2Val) {
+                    p2Btn.classList.remove('wrong', 'correct', 'animate-pop');
+                    p2Val.textContent = q.choices[i];
+                }
+            }
+        }
+
+        /* =========================================================================
+           3. THREE.JS 3D REALISTIC CIRCUIT & SPORTS CARS
+           ========================================================================= */
+        let scene, camera, cameraP2, renderer, trackCurve;
+        const TRACK_POINTS_COUNT = 600;
+        const ROAD_WIDTH = 15;
+        let nitroParticles = [];
+
+        // Camera Orbit Controls for user interaction
+        const camOrbit = {
+            isDragging: false,
+            prevX: 0,
+            prevY: 0,
+            yawOffset: 0,
+            pitchOffset: 0
+        };
+
+        function init3DWorld() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xcce5d8);
+            scene.fog = new THREE.FogExp2(0xcce5d8, 0.0028);
+
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 900);
+            cameraP2 = new THREE.PerspectiveCamera(55, (window.innerWidth / 2) / window.innerHeight, 0.5, 900);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Lights - balanced so ground & road colors match reference screenshot
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x6b9e78, 0.6);
+            scene.add(hemiLight);
+
+            const dirLight = new THREE.DirectionalLight(0xfffbeb, 0.45);
+            dirLight.position.set(80, 140, 60);
+            scene.add(dirLight);
+
+            // Build Closed 3D Racing Circuit Spline first so hills/trees can respect track clearance
+            buildCircuitTrack();
+
+            // Build Ground Plane & Low-Poly Hills/Mountains safely outside track
+            buildEnvironment();
+
+            // Build 3 Sports Cars
+            createRacers();
+
+            // Mouse & Touch Camera Angle Interaction
+            setupCameraInteraction(renderer.domElement);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function isNearTrack(x, z, minClearance) {
+            if (!trackCurve) return false;
+            const samples = 120;
+            const minSq = minClearance * minClearance;
+            for (let i = 0; i < samples; i++) {
+                const pt = trackCurve.getPointAt(i / samples);
+                const dx = x - pt.x;
+                const dz = z - pt.z;
+                if (dx * dx + dz * dz < minSq) return true;
+            }
+            return false;
+        }
+
+        function buildEnvironment() {
+            // Base meadow floor (pastel green matching reference image)
+            const groundGeo = new THREE.PlaneGeometry(2400, 2400);
+            const groundMat = new THREE.MeshLambertMaterial({ color: 0xb8dca8 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.35;
+            scene.add(ground);
+
+            // Soft green rolling hills placed strictly outside and inside the circuit with safe clearance
+            const hillMat = new THREE.MeshLambertMaterial({ color: 0xa7d397 });
+            const hillCandidates = [
+                // Center infield hill (safe inside the loop)
+                [0, -18, 0, 82, 22],
+                // Outer background hills (far outside the 185m radius track)
+                [-340, -20, -290, 145, 38],
+                [340, -20, -280, 150, 40],
+                [0, -22, 360, 155, 38],
+                [0, -22, -360, 150, 36],
+                [-370, -20, 140, 140, 34],
+                [370, -20, 150, 145, 36]
+            ];
+            hillCandidates.forEach(([x, y, z, r, h]) => {
+                // Ensure the hill radius never overlaps the road ribbon
+                if (!isNearTrack(x, z, r + ROAD_WIDTH + 8)) {
+                    const geo = new THREE.SphereGeometry(r, 24, 16);
+                    geo.scale(1, h / r, 1);
+                    const hill = new THREE.Mesh(geo, hillMat);
+                    hill.position.set(x, y, z);
+                    scene.add(hill);
+                }
+            });
+
+            // Distant Mountain Peaks (matching the grey-green peaks in screenshot 2)
+            const mountainMat = new THREE.MeshLambertMaterial({ color: 0x8fb0a3, flatShading: true });
+            for (let i = 0; i < 16; i++) {
+                const angle = (i / 16) * Math.PI * 2;
+                const dist = 460 + (i % 3) * 50;
+                const height = 110 + (i % 4) * 35;
+                const radius = 95 + (i % 3) * 25;
+                const mGeo = new THREE.ConeGeometry(radius, height, 5);
+                const mMesh = new THREE.Mesh(mGeo, mountainMat);
+                mMesh.position.set(Math.cos(angle) * dist, height * 0.4, Math.sin(angle) * dist);
+                mMesh.rotation.y = i * 0.7;
+                scene.add(mMesh);
+            }
+        }
+
+        function buildCircuitTrack() {
+            // Create a smooth, continuous closed loop circuit spline
+            const controlPoints = [];
+            const numCtrl = 20;
+            const baseRadius = 195;
+            for (let i = 0; i < numCtrl; i++) {
+                const theta = (i / numCtrl) * Math.PI * 2;
+                const wave = Math.sin(theta * 3) * 20 + Math.cos(theta * 2) * 16;
+                const r = baseRadius + wave;
+                controlPoints.push(new THREE.Vector3(Math.cos(theta) * r, 0, Math.sin(theta) * r));
+            }
+            trackCurve = new THREE.CatmullRomCurve3(controlPoints, true, 'centripetal', 0.5);
+
+            // Generate Road Ribbon Geometry, Road Bed, Curbs, Lane Dashes, Guardrails, and Pine Trees
+            const bedPositions = [];
+            const roadPositions = [];
+            const roadIndices = [];
+            const curbLeftPos = [];
+            const curbLeftColors = [];
+            const curbRightPos = [];
+            const curbRightColors = [];
+            const curbIndices = [];
+
+            const halfRoad = ROAD_WIDTH / 2;
+            const curbWidth = 1.35;
+            const halfBed = halfRoad + curbWidth + 0.8;
+
+            for (let i = 0; i <= TRACK_POINTS_COUNT; i++) {
+                // At i === TRACK_POINTS_COUNT, wrap cleanly to 0 so the loop has zero seam
+                const t = (i === TRACK_POINTS_COUNT) ? 0 : (i / TRACK_POINTS_COUNT);
+                const pt = trackCurve.getPointAt(t);
+                const tangent = trackCurve.getTangentAt(t).normalize();
+                const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+                const leftBed = pt.clone().addScaledVector(normal, -halfBed);
+                const rightBed = pt.clone().addScaledVector(normal, halfBed);
+                bedPositions.push(leftBed.x, 0.08, leftBed.z);
+                bedPositions.push(rightBed.x, 0.08, rightBed.z);
+
+                const leftEdge = pt.clone().addScaledVector(normal, -halfRoad);
+                const rightEdge = pt.clone().addScaledVector(normal, halfRoad);
+
+                roadPositions.push(leftEdge.x, 0.16, leftEdge.z);
+                roadPositions.push(rightEdge.x, 0.16, rightEdge.z);
+
+                // Outer curbs
+                const leftCurbOuter = pt.clone().addScaledVector(normal, -(halfRoad + curbWidth));
+                const rightCurbOuter = pt.clone().addScaledVector(normal, halfRoad + curbWidth);
+
+                curbLeftPos.push(leftCurbOuter.x, 0.19, leftCurbOuter.z, leftEdge.x, 0.19, leftEdge.z);
+                curbRightPos.push(rightEdge.x, 0.19, rightEdge.z, rightCurbOuter.x, 0.19, rightCurbOuter.z);
+
+                // Alternating Red and White curb colors
+                const isRed = Math.floor(i / 2) % 2 === 0;
+                const cR = isRed ? 0.92 : 0.98;
+                const cG = isRed ? 0.36 : 0.98;
+                const cB = isRed ? 0.36 : 0.98;
+                curbLeftColors.push(cR, cG, cB, cR, cG, cB);
+                curbRightColors.push(cR, cG, cB, cR, cG, cB);
+
+                if (i < TRACK_POINTS_COUNT) {
+                    const idx = i * 2;
+                    roadIndices.push(idx, idx + 1, idx + 2, idx + 1, idx + 3, idx + 2);
+                    curbIndices.push(idx, idx + 1, idx + 2, idx + 1, idx + 3, idx + 2);
+                }
+            }
+
+            // Dark Road Shoulder/Bed Mesh to prevent any ground z-fighting at long distances
+            const bedGeo = new THREE.BufferGeometry();
+            bedGeo.setAttribute('position', new THREE.Float32BufferAttribute(bedPositions, 3));
+            bedGeo.setIndex(roadIndices);
+            bedGeo.computeVertexNormals();
+            const bedMat = new THREE.MeshLambertMaterial({ color: 0x64748b, side: THREE.DoubleSide });
+            scene.add(new THREE.Mesh(bedGeo, bedMat));
+
+            // Main Asphalt Road Mesh (slate-grey matching reference screenshot)
+            const roadGeo = new THREE.BufferGeometry();
+            roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(roadPositions, 3));
+            roadGeo.setIndex(roadIndices);
+            roadGeo.computeVertexNormals();
+            const roadMat = new THREE.MeshLambertMaterial({
+                color: 0x7c8b99,
+                side: THREE.DoubleSide,
+                polygonOffset: true,
+                polygonOffsetFactor: -1,
+                polygonOffsetUnits: -1
+            });
+            const roadMesh = new THREE.Mesh(roadGeo, roadMat);
+            scene.add(roadMesh);
+
+            // Left Curb Mesh
+            const leftCurbGeo = new THREE.BufferGeometry();
+            leftCurbGeo.setAttribute('position', new THREE.Float32BufferAttribute(curbLeftPos, 3));
+            leftCurbGeo.setAttribute('color', new THREE.Float32BufferAttribute(curbLeftColors, 3));
+            leftCurbGeo.setIndex(curbIndices);
+            leftCurbGeo.computeVertexNormals();
+            const curbMat = new THREE.MeshLambertMaterial({
+                vertexColors: true,
+                side: THREE.DoubleSide,
+                polygonOffset: true,
+                polygonOffsetFactor: -2,
+                polygonOffsetUnits: -2
+            });
+            scene.add(new THREE.Mesh(leftCurbGeo, curbMat));
+
+            // Right Curb Mesh
+            const rightCurbGeo = new THREE.BufferGeometry();
+            rightCurbGeo.setAttribute('position', new THREE.Float32BufferAttribute(curbRightPos, 3));
+            rightCurbGeo.setAttribute('color', new THREE.Float32BufferAttribute(curbRightColors, 3));
+            rightCurbGeo.setIndex(curbIndices);
+            rightCurbGeo.computeVertexNormals();
+            scene.add(new THREE.Mesh(rightCurbGeo, curbMat));
+
+            // White Dashed Lane Lines (2 lane dividers for 3 lanes)
+            const dashGeo = new THREE.PlaneGeometry(0.32, 2.6);
+            dashGeo.rotateX(-Math.PI / 2);
+            const dashMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+
+            for (let i = 0; i < TRACK_POINTS_COUNT; i += 3) {
+                const t = i / TRACK_POINTS_COUNT;
+                const pt = trackCurve.getPointAt(t);
+                const tangent = trackCurve.getTangentAt(t).normalize();
+                const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+                const angle = Math.atan2(tangent.x, tangent.z);
+
+                [-ROAD_WIDTH / 6, ROAD_WIDTH / 6].forEach(offset => {
+                    const dash = new THREE.Mesh(dashGeo, dashMat);
+                    const pos = pt.clone().addScaledVector(normal, offset);
+                    dash.position.set(pos.x, 0.22, pos.z);
+                    dash.rotation.y = angle;
+                    scene.add(dash);
+                });
+            }
+
+            // Concrete Barriers & Low-Poly Pine Trees along the circuit
+            const barrierGeo = new THREE.BoxGeometry(0.6, 1.1, 4.5);
+            const barrierMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+
+            for (let i = 0; i < TRACK_POINTS_COUNT; i += 8) {
+                const t = i / TRACK_POINTS_COUNT;
+                const pt = trackCurve.getPointAt(t);
+                const tangent = trackCurve.getTangentAt(t).normalize();
+                const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+                const angle = Math.atan2(tangent.x, tangent.z);
+
+                // Concrete barriers on alternating sides
+                if (i % 16 === 0) {
+                    [-1, 1].forEach(side => {
+                        const barrier = new THREE.Mesh(barrierGeo, barrierMat);
+                        const bPos = pt.clone().addScaledVector(normal, side * (halfRoad + 3.2));
+                        barrier.position.set(bPos.x, 0.55, bPos.z);
+                        barrier.rotation.y = angle;
+                        scene.add(barrier);
+                    });
+                }
+
+                // Low-poly layered pine trees on both sides of the road (verified not to overlap other road segments)
+                [-1, 1].forEach(side => {
+                    const treeDist = halfRoad + 11 + Math.random() * 26;
+                    const tPos = pt.clone().addScaledVector(normal, side * treeDist);
+                    if (!isNearTrack(tPos.x, tPos.z, halfRoad + 7)) {
+                        const scale = 0.85 + Math.random() * 0.7;
+                        const tree = createPineTree(scale);
+                        tree.position.set(tPos.x, 0, tPos.z);
+                        scene.add(tree);
+                    }
+                });
+            }
+
+            // Start / Finish Gantry Arch at t = 0
+            createStartGantry();
+        }
+
+        function createPineTree(scale = 1) {
+            const group = new THREE.Group();
+            const trunkGeo = new THREE.CylinderGeometry(0.45, 0.65, 2.6, 7);
+            const trunkMat = new THREE.MeshLambertMaterial({ color: 0x8b6f47, flatShading: true });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 1.3;
+            group.add(trunk);
+
+            const foliageMat = new THREE.MeshLambertMaterial({ color: 0x76c07d, flatShading: true });
+            const c1 = new THREE.Mesh(new THREE.ConeGeometry(3.2, 4.5, 7), foliageMat);
+            c1.position.y = 4.2;
+            group.add(c1);
+
+            const c2 = new THREE.Mesh(new THREE.ConeGeometry(2.5, 3.8, 7), foliageMat);
+            c2.position.y = 6.4;
+            group.add(c2);
+
+            const c3 = new THREE.Mesh(new THREE.ConeGeometry(1.7, 3.0, 7), foliageMat);
+            c3.position.y = 8.2;
+            group.add(c3);
+
+            group.scale.set(scale, scale, scale);
+            return group;
+        }
+
+        function createStartGantry() {
+            const pt = trackCurve.getPointAt(0);
+            const tangent = trackCurve.getTangentAt(0).normalize();
+            const angle = Math.atan2(tangent.x, tangent.z);
+
+            const gantry = new THREE.Group();
+            const pillarMat = new THREE.MeshLambertMaterial({ color: 0xbe185d });
+            const pillarGeo = new THREE.BoxGeometry(1.2, 8.5, 1.2);
+
+            const leftPillar = new THREE.Mesh(pillarGeo, pillarMat);
+            leftPillar.position.set(-(ROAD_WIDTH / 2 + 1.5), 4.25, 0);
+            gantry.add(leftPillar);
+
+            const rightPillar = new THREE.Mesh(pillarGeo, pillarMat);
+            rightPillar.position.set(ROAD_WIDTH / 2 + 1.5, 4.25, 0);
+            gantry.add(rightPillar);
+
+            const bannerGeo = new THREE.BoxGeometry(ROAD_WIDTH + 4.2, 2.2, 1.4);
+            const bannerMat = new THREE.MeshLambertMaterial({ color: 0x16a34a });
+            const banner = new THREE.Mesh(bannerGeo, bannerMat);
+            banner.position.set(0, 7.8, 0);
+            gantry.add(banner);
+
+            gantry.position.copy(pt);
+            gantry.rotation.y = angle;
+            scene.add(gantry);
+        }
+
+        function createSportsCarMesh(bodyColor, spoilerColor) {
+            const car = new THREE.Group();
+
+            // Main Chassis
+            const bodyGeo = new THREE.BoxGeometry(2.3, 0.68, 4.4);
+            const bodyMat = new THREE.MeshLambertMaterial({ color: bodyColor });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.62;
+            car.add(body);
+
+            // Cabin / Roof
+            const cabinGeo = new THREE.BoxGeometry(1.85, 0.58, 2.2);
+            const cabinMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+            cabin.position.set(0, 1.18, -0.2);
+            car.add(cabin);
+
+            // Coloured Roof Top Cap
+            const roofGeo = new THREE.BoxGeometry(1.7, 0.12, 1.8);
+            const roof = new THREE.Mesh(roofGeo, bodyMat);
+            roof.position.set(0, 1.48, -0.2);
+            car.add(roof);
+
+            // Rear Spoiler Struts + Wing (Yellow wing like screenshot)
+            const strutGeo = new THREE.BoxGeometry(0.16, 0.45, 0.3);
+            const strutMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+            const leftStrut = new THREE.Mesh(strutGeo, strutMat);
+            leftStrut.position.set(-0.7, 1.1, -1.85);
+            car.add(leftStrut);
+
+            const rightStrut = new THREE.Mesh(strutGeo, strutMat);
+            rightStrut.position.set(0.7, 1.1, -1.85);
+            car.add(rightStrut);
+
+            const wingGeo = new THREE.BoxGeometry(2.35, 0.16, 0.55);
+            const wingMat = new THREE.MeshLambertMaterial({ color: spoilerColor });
+            const wing = new THREE.Mesh(wingGeo, wingMat);
+            wing.position.set(0, 1.32, -1.9);
+            car.add(wing);
+
+            // Glowing Taillights
+            const tailGeo = new THREE.BoxGeometry(0.55, 0.22, 0.1);
+            const tailMat = new THREE.MeshBasicMaterial({ color: 0xfda4af });
+            const leftTail = new THREE.Mesh(tailGeo, tailMat);
+            leftTail.position.set(-0.68, 0.68, -2.21);
+            car.add(leftTail);
+
+            const rightTail = new THREE.Mesh(tailGeo, tailMat);
+            rightTail.position.set(0.68, 0.68, -2.21);
+            car.add(rightTail);
+
+            // 4 Wheels
+            const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 14);
+            wheelGeo.rotateZ(Math.PI / 2);
+            const wheelMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+            const wheelPositions = [
+                [-1.18, 0.45, 1.35],
+                [1.18, 0.45, 1.35],
+                [-1.18, 0.45, -1.35],
+                [1.18, 0.45, -1.35]
+            ];
+            wheelPositions.forEach(([wx, wy, wz]) => {
+                const w = new THREE.Mesh(wheelGeo, wheelMat);
+                w.position.set(wx, wy, wz);
+                car.add(w);
+            });
+
+            return car;
+        }
+
+        function createNameplateSprite(text, bgColor = '#e11d48') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(4.5, 1.12, 1);
+            sprite.position.set(0, 2.55, 0);
+            sprite.userData = { canvas, ctx, texture, bgColor };
+
+            updateNameplateSprite(sprite, text, bgColor);
+            return sprite;
+        }
+
+        function updateNameplateSprite(sprite, text, bgColor) {
+            if (!sprite || !sprite.userData) return;
+            const { canvas, ctx, texture } = sprite.userData;
+            const color = bgColor || sprite.userData.bgColor;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Pill background
+            ctx.fillStyle = color;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 8;
+            const x = 24, y = 20, w = canvas.width - 48, h = canvas.height - 40, r = 36;
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 40px "Plus Jakarta Sans", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2 + 2);
+
+            texture.needsUpdate = true;
+        }
+
+        function createRacers() {
+            // Player Car (Red/Pink with Yellow Spoiler - Lane Center)
+            const playerMesh = createSportsCarMesh(0xd8315b, 0xfacc15);
+            const p1NameSprite = createNameplateSprite('PEMAIN 1', '#e11d48');
+            playerMesh.add(p1NameSprite);
+            scene.add(playerMesh);
+
+            // AI 1 Car (Cyan with Dark Spoiler - Left Lane)
+            const ai1Mesh = createSportsCarMesh(0x06b6d4, 0x38bdf8);
+            const p2NameSprite = createNameplateSprite('AI BIRU', '#0284c7');
+            ai1Mesh.add(p2NameSprite);
+            scene.add(ai1Mesh);
+
+            // AI 2 Car (Emerald Green with Yellow Spoiler - Right Lane)
+            const ai2Mesh = createSportsCarMesh(0x10b981, 0xfde047);
+            const ai2NameSprite = createNameplateSprite('AI HIJAU', '#059669');
+            ai2Mesh.add(ai2NameSprite);
+            scene.add(ai2Mesh);
+
+            GameState.racers = [
+                {
+                    id: 'player',
+                    name: 'Pemain 1',
+                    mesh: playerMesh,
+                    nameSprite: p1NameSprite,
+                    laneOffset: 0,
+                    distance: 0,
+                    speedKmh: 65,
+                    baseSpeedKmh: 65,
+                    boostTimer: 0,
+                    slowTimer: 0
+                },
+                {
+                    id: 'ai1',
+                    name: 'Turbo Cyan AI',
+                    mesh: ai1Mesh,
+                    nameSprite: p2NameSprite,
+                    laneOffset: -4.2,
+                    distance: 8,
+                    speedKmh: 76,
+                    baseSpeedKmh: 76,
+                    boostTimer: 0,
+                    slowTimer: 0
+                },
+                {
+                    id: 'ai2',
+                    name: 'Green Flash AI',
+                    mesh: ai2Mesh,
+                    nameSprite: ai2NameSprite,
+                    laneOffset: 4.2,
+                    distance: 5,
+                    speedKmh: 72,
+                    baseSpeedKmh: 72,
+                    boostTimer: 0,
+                    slowTimer: 0
+                }
+            ];
+
+            updateRacer3DPositions(0);
+        }
+
+        function spawnExhaustParticle(carMesh, isTurbo) {
+            const pGeo = new THREE.SphereGeometry(isTurbo ? 0.28 : 0.18, 6, 6);
+            const pMat = new THREE.MeshBasicMaterial({
+                color: isTurbo ? 0x38bdf8 : 0xe2e8f0,
+                transparent: true,
+                opacity: 0.65
+            });
+            const p = new THREE.Mesh(pGeo, pMat);
+            const worldPos = new THREE.Vector3(
+                (Math.random() - 0.5) * 0.9,
+                0.35,
+                -2.4
+            );
+            carMesh.localToWorld(worldPos);
+            p.position.copy(worldPos);
+            scene.add(p);
+            nitroParticles.push({ mesh: p, life: 0.45 });
+        }
+
+        /* =========================================================================
+           4. RACE FLOW, ANSWER SUBMISSION & HUD UPDATES
+           ========================================================================= */
+        function startRace() {
+            AudioEngine.init();
+            if (AudioEngine.musicOn) AudioEngine.startMusic();
+
+            GameState.playerName = document.getElementById('input-player-name').value.trim() || 'Pemain 1';
+            GameState.player2Name = document.getElementById('input-player2-name').value.trim() || 'Pemain 2';
+            GameState.grade = document.getElementById('select-grade').value;
+            GameState.operation = document.getElementById('select-operation').value;
+            GameState.aiDiff = document.getElementById('select-ai-diff').value;
+
+            const isVersus = GameState.mode === 'versus';
+
+            // Configure laps & distance by mode
+            if (GameState.mode === 'championship') {
+                GameState.laps = 2;
+                GameState.totalDistance = 2200;
+                document.getElementById('hud-mode-title').textContent = 'CHAMPIONSHIP (2 PUTARAN)';
+            } else if (GameState.mode === 'solo') {
+                GameState.laps = 1;
+                GameState.totalDistance = 1100;
+                document.getElementById('hud-mode-title').textContent = 'SOLO TIME ATTACK (1 PUTARAN)';
+            } else if (isVersus) {
+                GameState.laps = 1;
+                GameState.totalDistance = 1100;
+                document.getElementById('hud-mode-title').textContent = 'DUEL 2 PLAYER SPLIT-SCREEN (1 PUTARAN)';
+            } else {
+                GameState.laps = 1;
+                GameState.totalDistance = 1100;
+                document.getElementById('hud-mode-title').textContent = 'QUICK RACE (1 PUTARAN)';
+            }
+
+            // Update question subheader
+            const opNames = {
+                add: 'Penjumlahan',
+                sub: 'Pengurangan',
+                mul: 'Perkalian',
+                div: 'Pembagian',
+                mix: 'Campuran'
+            };
+            document.getElementById('hud-question-meta').textContent =
+                `Kelas ${GameState.grade} • ${opNames[GameState.operation]}`;
+
+            // Reset stats P1 & P2
+            GameState.elapsedTime = 0;
+            GameState.score = 0;
+            GameState.correctCount = 0;
+            GameState.questionCount = 0;
+            GameState.streak = 0;
+
+            GameState.p2.score = 0;
+            GameState.p2.correctCount = 0;
+            GameState.p2.questionCount = 0;
+            GameState.p2.streak = 0;
+
+            // Configure AI Speeds based on difficulty
+            const aiSpeedMap = {
+                easy: [70, 66],
+                normal: [84, 79],
+                hard: [102, 95]
+            };
+            const [s1, s2] = aiSpeedMap[GameState.aiDiff] || aiSpeedMap.normal;
+
+            // Reset Racer Positions on the same track
+            const [player, ai1, ai2] = GameState.racers;
+            player.name = GameState.playerName;
+            player.distance = 0;
+            player.speedKmh = 65;
+            player.baseSpeedKmh = 65;
+            player.boostTimer = 0;
+            player.slowTimer = 0;
+            player.laneOffset = isVersus ? -2.6 : 0;
+            updateNameplateSprite(player.nameSprite, `P1: ${GameState.playerName}`, '#e11d48');
+
+            if (isVersus) {
+                // In 2-Player mode, ai1 is controlled by Player 2 side-by-side on the same track!
+                ai1.name = GameState.player2Name;
+                ai1.distance = 0;
+                ai1.baseSpeedKmh = 65;
+                ai1.speedKmh = 65;
+                ai1.boostTimer = 0;
+                ai1.slowTimer = 0;
+                ai1.laneOffset = 2.6;
+                updateNameplateSprite(ai1.nameSprite, `P2: ${GameState.player2Name}`, '#0284c7');
+
+                ai2.distance = 6;
+                ai2.baseSpeedKmh = s2;
+                ai2.speedKmh = s2;
+                ai2.laneOffset = 0;
+                updateNameplateSprite(ai2.nameSprite, 'AI HIJAU', '#059669');
+            } else {
+                ai1.name = 'Turbo Cyan AI';
+                ai1.distance = 12;
+                ai1.baseSpeedKmh = s1;
+                ai1.speedKmh = s1;
+                ai1.boostTimer = 0;
+                ai1.slowTimer = 0;
+                ai1.laneOffset = -4.2;
+                updateNameplateSprite(ai1.nameSprite, 'AI BIRU', '#0284c7');
+
+                ai2.distance = 8;
+                ai2.baseSpeedKmh = s2;
+                ai2.speedKmh = s2;
+                ai2.laneOffset = 4.2;
+                updateNameplateSprite(ai2.nameSprite, 'AI HIJAU', '#059669');
+            }
+
+            // Hide AI in Solo mode
+            const isSolo = GameState.mode === 'solo';
+            ai1.mesh.visible = !isSolo;
+            ai2.mesh.visible = !isSolo;
+            document.getElementById('marker-ai1').style.display = isSolo ? 'none' : 'flex';
+            document.getElementById('marker-ai2').style.display = isSolo ? 'none' : 'flex';
+
+            // Toggle 1P vs 2P Split-Screen HUD elements
+            document.getElementById('bottom-hud-1p').classList.toggle('hidden', isVersus);
+            document.getElementById('bottom-hud-2p').classList.toggle('hidden', !isVersus);
+            document.getElementById('split-divider').classList.toggle('hidden', !isVersus);
+
+            // Update Player 1 & Player 2 Names across all HUD panels
+            const topPlayerLabel = document.getElementById('hud-player-label');
+            const topPlayerName = document.getElementById('hud-player-name');
+            if (isVersus) {
+                topPlayerLabel.textContent = 'PEMAIN 1 vs PEMAIN 2';
+                topPlayerName.textContent = `${GameState.playerName} vs ${GameState.player2Name}`;
+            } else {
+                topPlayerLabel.textContent = 'PEMAIN 1';
+                topPlayerName.textContent = GameState.playerName;
+            }
+
+            document.getElementById('hud-1p-racer-badge').textContent = `🏎️ PEMAIN 1: ${GameState.playerName}`;
+            document.getElementById('p1-hud-name').textContent = `PEMAIN 1: ${GameState.playerName}`;
+            document.getElementById('p2-hud-name').textContent = `PEMAIN 2: ${GameState.player2Name}`;
+            document.getElementById('p1-feedback-text').innerHTML = 'Tombol 1 - 4';
+            document.getElementById('p2-feedback-text').innerHTML = 'Tombol 7 - 0';
+
+            // Switch UI from Menu to HUD
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('modal-finish').classList.add('hidden');
+            document.getElementById('modal-pause').classList.add('hidden');
+            document.getElementById('race-hud').classList.remove('hidden');
+            document.getElementById('camera-hint').classList.toggle('hidden', isVersus);
+
+            generateMathQuestion();
+            if (isVersus) generateMathQuestionP2();
+            updateHUD();
+
+            // Run 3-2-1-GO Countdown
+            GameState.screen = 'countdown';
+            const banner = document.getElementById('center-banner');
+            const cdText = document.getElementById('countdown-text');
+            banner.classList.remove('hidden');
+
+            let count = 3;
+            cdText.textContent = count;
+            AudioEngine.playCountdown(false);
+
+            const cdInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    cdText.textContent = count;
+                    AudioEngine.playCountdown(false);
+                } else if (count === 0) {
+                    cdText.textContent = 'MULAI!';
+                    AudioEngine.playCountdown(true);
+                    GameState.screen = 'racing';
+                } else {
+                    clearInterval(cdInterval);
+                    banner.classList.add('hidden');
+                }
+            }, 750);
+        }
+
+        function submitAnswer(choiceIdx) {
+            if (GameState.mode === 'versus') {
+                submitAnswerP1(choiceIdx);
+                return;
+            }
+            if (GameState.screen !== 'racing') return;
+            if (GameState.wrongSelectedIndices.has(choiceIdx)) return;
+
+            const q = GameState.currentQuestion;
+            const chosenVal = q.choices[choiceIdx];
+            const btn = document.getElementById('ans-btn-' + choiceIdx);
+            const feedbackEl = document.getElementById('hud-feedback-text');
+            const player = GameState.racers[0];
+
+            if (chosenVal === q.answer) {
+                AudioEngine.playCorrect();
+                btn.classList.add('correct', 'animate-pop');
+
+                GameState.questionCount++;
+                if (!q.hadMistake) {
+                    GameState.correctCount++;
+                    GameState.streak++;
+                } else {
+                    GameState.streak = 1;
+                }
+
+                const streakBonus = Math.min(GameState.streak * 15, 75);
+                GameState.score += 100 + streakBonus;
+
+                player.boostTimer = 2.6;
+                player.slowTimer = 0;
+
+                feedbackEl.innerHTML = `<span class="text-emerald-600">✅ Hebat! Turbo Boost Aktif (+${100 + streakBonus} Skor)</span>`;
+
+                const streakBadge = document.getElementById('hud-streak-badge');
+                if (GameState.streak >= 2) {
+                    streakBadge.textContent = `🔥 Streak ${GameState.streak}x`;
+                    streakBadge.classList.remove('hidden');
+                } else {
+                    streakBadge.classList.add('hidden');
+                }
+
+                updateHUD();
+
+                setTimeout(() => {
+                    if (GameState.screen === 'racing') {
+                        feedbackEl.innerHTML = `<span class="text-slate-500">Pilih jawaban yang benar (Tombol 1 - 4)</span>`;
+                        generateMathQuestion();
+                    }
+                }, 280);
+            } else {
+                AudioEngine.playWrong();
+                q.hadMistake = true;
+                GameState.streak = 0;
+                GameState.wrongSelectedIndices.add(choiceIdx);
+                btn.classList.add('wrong', 'animate-pop');
+
+                player.boostTimer = 0;
+                player.slowTimer = 1.6;
+
+                document.getElementById('hud-streak-badge').classList.add('hidden');
+                feedbackEl.innerHTML = `<span class="text-rose-600">❌ Kurang tepat, ayo pilih jawaban lain!</span>`;
+                updateHUD();
+            }
+        }
+
+        function submitAnswerP1(choiceIdx) {
+            if (GameState.screen !== 'racing') return;
+            if (GameState.wrongSelectedIndices.has(choiceIdx)) return;
+
+            const q = GameState.currentQuestion;
+            const chosenVal = q.choices[choiceIdx];
+            const btn = document.getElementById('p1-ans-btn-' + choiceIdx);
+            const feedbackEl = document.getElementById('p1-feedback-text');
+            const player = GameState.racers[0];
+
+            if (chosenVal === q.answer) {
+                AudioEngine.playCorrect();
+                btn.classList.add('correct', 'animate-pop');
+
+                GameState.questionCount++;
+                if (!q.hadMistake) {
+                    GameState.correctCount++;
+                    GameState.streak++;
+                } else {
+                    GameState.streak = 1;
+                }
+
+                const streakBonus = Math.min(GameState.streak * 15, 75);
+                GameState.score += 100 + streakBonus;
+
+                player.boostTimer = 2.6;
+                player.slowTimer = 0;
+
+                feedbackEl.innerHTML = `<span class="text-emerald-600">🚀 TURBO! +${100 + streakBonus}</span>`;
+                updateHUD();
+
+                setTimeout(() => {
+                    if (GameState.screen === 'racing') {
+                        feedbackEl.innerHTML = `Tombol 1 - 4`;
+                        generateMathQuestion();
+                    }
+                }, 260);
+            } else {
+                AudioEngine.playWrong();
+                q.hadMistake = true;
+                GameState.streak = 0;
+                GameState.wrongSelectedIndices.add(choiceIdx);
+                btn.classList.add('wrong', 'animate-pop');
+
+                player.boostTimer = 0;
+                player.slowTimer = 1.5;
+
+                feedbackEl.innerHTML = `<span class="text-rose-600">❌ Coba lagi!</span>`;
+                updateHUD();
+            }
+        }
+
+        function submitAnswerP2(choiceIdx) {
+            if (GameState.screen !== 'racing' || GameState.mode !== 'versus') return;
+            if (GameState.p2.wrongSelectedIndices.has(choiceIdx)) return;
+
+            const q = GameState.p2.currentQuestion;
+            const chosenVal = q.choices[choiceIdx];
+            const btn = document.getElementById('p2-ans-btn-' + choiceIdx);
+            const feedbackEl = document.getElementById('p2-feedback-text');
+            const player2 = GameState.racers[1];
+
+            if (chosenVal === q.answer) {
+                AudioEngine.playCorrect();
+                btn.classList.add('correct', 'animate-pop');
+
+                GameState.p2.questionCount++;
+                if (!q.hadMistake) {
+                    GameState.p2.correctCount++;
+                    GameState.p2.streak++;
+                } else {
+                    GameState.p2.streak = 1;
+                }
+
+                const streakBonus = Math.min(GameState.p2.streak * 15, 75);
+                GameState.p2.score += 100 + streakBonus;
+
+                player2.boostTimer = 2.6;
+                player2.slowTimer = 0;
+
+                feedbackEl.innerHTML = `<span class="text-emerald-600">🚀 TURBO! +${100 + streakBonus}</span>`;
+                updateHUD();
+
+                setTimeout(() => {
+                    if (GameState.screen === 'racing') {
+                        feedbackEl.innerHTML = `Tombol 7 - 0`;
+                        generateMathQuestionP2();
+                    }
+                }, 260);
+            } else {
+                AudioEngine.playWrong();
+                q.hadMistake = true;
+                GameState.p2.streak = 0;
+                GameState.p2.wrongSelectedIndices.add(choiceIdx);
+                btn.classList.add('wrong', 'animate-pop');
+
+                player2.boostTimer = 0;
+                player2.slowTimer = 1.5;
+
+                feedbackEl.innerHTML = `<span class="text-rose-600">❌ Coba lagi!</span>`;
+                updateHUD();
+            }
+        }
+
+        // Keyboard Shortcuts: P1 (1, 2, 3, 4) & P2 (7, 8, 9, 0)
+        window.addEventListener('keydown', (e) => {
+            if (GameState.screen !== 'racing') return;
+            if (e.key === '1') submitAnswer(0);
+            else if (e.key === '2') submitAnswer(1);
+            else if (e.key === '3') submitAnswer(2);
+            else if (e.key === '4') submitAnswer(3);
+            else if (GameState.mode === 'versus') {
+                if (e.key === '7') submitAnswerP2(0);
+                else if (e.key === '8') submitAnswerP2(1);
+                else if (e.key === '9') submitAnswerP2(2);
+                else if (e.key === '0') submitAnswerP2(3);
+            }
+        });
+
+        function updateRacerPhysics(dt) {
+            const [player, ai1, ai2] = GameState.racers;
+
+            // Player 1 speed state
+            let targetPlayerSpeed = player.baseSpeedKmh;
+            const statusEl = document.getElementById('hud-speed-status');
+
+            if (player.boostTimer > 0) {
+                player.boostTimer -= dt;
+                targetPlayerSpeed = 148 + Math.min(GameState.streak * 6, 30);
+                statusEl.textContent = '🚀 TURBO BOOST!';
+                statusEl.className = 'mt-0 sm:mt-2 px-3 py-1 rounded-lg bg-emerald-500 text-white text-[10px] font-extrabold uppercase tracking-wider w-28 sm:w-full text-center';
+            } else if (player.slowTimer > 0) {
+                player.slowTimer -= dt;
+                targetPlayerSpeed = 42;
+                statusEl.textContent = '⚠️ MELAMBAT';
+                statusEl.className = 'mt-0 sm:mt-2 px-3 py-1 rounded-lg bg-rose-600 text-white text-[10px] font-extrabold uppercase tracking-wider w-28 sm:w-full text-center';
+            } else {
+                statusEl.textContent = 'NORMAL';
+                statusEl.className = 'mt-0 sm:mt-2 px-3 py-1 rounded-lg bg-slate-800 text-slate-300 text-[10px] font-extrabold uppercase tracking-wider w-28 sm:w-full text-center';
+            }
+
+            player.speedKmh += (targetPlayerSpeed - player.speedKmh) * Math.min(1, dt * 6);
+            player.distance += (player.speedKmh * 0.27778) * dt;
+
+            if (GameState.mode === 'versus') {
+                // Player 2 (controlling ai1 car) physics
+                let targetP2Speed = ai1.baseSpeedKmh;
+                if (ai1.boostTimer > 0) {
+                    ai1.boostTimer -= dt;
+                    targetP2Speed = 148 + Math.min(GameState.p2.streak * 6, 30);
+                } else if (ai1.slowTimer > 0) {
+                    ai1.slowTimer -= dt;
+                    targetP2Speed = 42;
+                }
+                ai1.speedKmh += (targetP2Speed - ai1.speedKmh) * Math.min(1, dt * 6);
+                ai1.distance += (ai1.speedKmh * 0.27778) * dt;
+
+                // AI 2 (3rd car on track) physics
+                const wave = Math.sin(GameState.elapsedTime * 1.7 + 2) * 8;
+                ai2.speedKmh = ai2.baseSpeedKmh + wave;
+                ai2.distance += (ai2.speedKmh * 0.27778) * dt;
+
+                if (Math.random() < (ai1.boostTimer > 0 ? 0.85 : 0.25)) {
+                    spawnExhaustParticle(ai1.mesh, ai1.boostTimer > 0);
+                }
+            } else if (GameState.mode !== 'solo') {
+                // Standard AI Cars Physics
+                [ai1, ai2].forEach((ai, idx) => {
+                    const wave = Math.sin(GameState.elapsedTime * 1.7 + idx * 2) * 8;
+                    ai.speedKmh = ai.baseSpeedKmh + wave;
+                    ai.distance += (ai.speedKmh * 0.27778) * dt;
+                });
+            }
+
+            // Spawn exhaust particles for Player 1
+            if (Math.random() < (player.boostTimer > 0 ? 0.85 : 0.25)) {
+                spawnExhaustParticle(player.mesh, player.boostTimer > 0);
+            }
+
+            // Check if Player 1 or Player 2 crossed Finish Line
+            if (player.distance >= GameState.totalDistance || (GameState.mode === 'versus' && ai1.distance >= GameState.totalDistance)) {
+                finishRace();
+            }
+        }
+
+        function updateRacer3DPositions(dt) {
+            if (!trackCurve) return;
+
+            GameState.racers.forEach((racer) => {
+                const loopFraction = ((racer.distance % GameState.trackLength) / GameState.trackLength + 1) % 1;
+                const pt = trackCurve.getPointAt(loopFraction);
+                const tangent = trackCurve.getTangentAt(loopFraction).normalize();
+                const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+                const carPos = pt.clone().addScaledVector(normal, racer.laneOffset);
+                carPos.y = 0.16;
+                racer.mesh.position.copy(carPos);
+
+                const lookTarget = pt.clone().add(tangent).addScaledVector(normal, racer.laneOffset);
+                lookTarget.y = 0.16;
+                racer.mesh.lookAt(lookTarget);
+            });
+
+            // Position Camera 1 behind Player 1 Car
+            const player = GameState.racers[0];
+            if (player && player.mesh) {
+                const loopFraction = ((player.distance % GameState.trackLength) / GameState.trackLength + 1) % 1;
+                const pt = trackCurve.getPointAt(loopFraction);
+                const tangent = trackCurve.getTangentAt(loopFraction).normalize();
+                const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+                const carWorldPos = pt.clone().addScaledVector(normal, player.laneOffset);
+
+                if (GameState.screen === 'menu') {
+                    player.distance += dt * 18;
+                    GameState.racers[1].distance = player.distance + 14;
+                    GameState.racers[2].distance = player.distance + 9;
+                }
+
+                const camDist = 13.5;
+                const camHeight = 5.4 + camOrbit.pitchOffset;
+                const behindDir = tangent.clone().negate();
+                behindDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), camOrbit.yawOffset);
+
+                const desiredCamPos = carWorldPos.clone()
+                    .addScaledVector(behindDir, camDist)
+                    .add(new THREE.Vector3(0, camHeight, 0));
+
+                camera.position.lerp(desiredCamPos, 0.14);
+
+                const lookAheadPos = carWorldPos.clone()
+                    .addScaledVector(tangent, 12)
+                    .add(new THREE.Vector3(0, 1.4, 0));
+                camera.lookAt(lookAheadPos);
+            }
+
+            // Position Camera 2 behind Player 2 Car (for Split-Screen)
+            const player2 = GameState.racers[1];
+            if (player2 && player2.mesh && cameraP2) {
+                const loopFraction2 = ((player2.distance % GameState.trackLength) / GameState.trackLength + 1) % 1;
+                const pt2 = trackCurve.getPointAt(loopFraction2);
+                const tangent2 = trackCurve.getTangentAt(loopFraction2).normalize();
+                const normal2 = new THREE.Vector3(-tangent2.z, 0, tangent2.x).normalize();
+
+                const carWorldPos2 = pt2.clone().addScaledVector(normal2, player2.laneOffset);
+                const behindDir2 = tangent2.clone().negate();
+
+                const desiredCamPos2 = carWorldPos2.clone()
+                    .addScaledVector(behindDir2, 13.5)
+                    .add(new THREE.Vector3(0, 5.4, 0));
+
+                cameraP2.position.lerp(desiredCamPos2, 0.14);
+
+                const lookAheadPos2 = carWorldPos2.clone()
+                    .addScaledVector(tangent2, 12)
+                    .add(new THREE.Vector3(0, 1.4, 0));
+                cameraP2.lookAt(lookAheadPos2);
+            }
+
+            // Update Nitro Particles
+            for (let i = nitroParticles.length - 1; i >= 0; i--) {
+                const item = nitroParticles[i];
+                item.life -= dt;
+                item.mesh.position.y += dt * 1.2;
+                item.mesh.scale.multiplyScalar(0.95);
+                if (item.life <= 0) {
+                    scene.remove(item.mesh);
+                    nitroParticles.splice(i, 1);
+                }
+            }
+        }
+
+        function updateHUD() {
+            const [player, ai1, ai2] = GameState.racers;
+
+            // Format Time 00:08.671
+            const mins = Math.floor(GameState.elapsedTime / 60);
+            const secs = Math.floor(GameState.elapsedTime % 60);
+            const ms = Math.floor((GameState.elapsedTime % 1) * 1000);
+            document.getElementById('hud-time').textContent =
+                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+
+            // Score & Accuracy
+            document.getElementById('hud-score').textContent = GameState.score;
+            const acc = GameState.questionCount > 0
+                ? Math.round((GameState.correctCount / GameState.questionCount) * 100)
+                : 0;
+            document.getElementById('hud-accuracy').textContent =
+                `${GameState.correctCount}/${GameState.questionCount} (${acc}%)`;
+
+            // Rank Calculation
+            let rank = 1;
+            let totalCars = 1;
+            if (GameState.mode !== 'solo') {
+                totalCars = 3;
+                if (ai1.distance > player.distance) rank++;
+                if (ai2.distance > player.distance) rank++;
+            }
+            document.getElementById('hud-rank-badge').textContent = `${rank}/${totalCars}`;
+
+            // Remaining Distance & Progress Bar
+            const leadDistance = GameState.mode === 'versus'
+                ? Math.max(player.distance, ai1.distance)
+                : player.distance;
+            const remDist = Math.max(0, Math.ceil(GameState.totalDistance - leadDistance));
+            document.getElementById('hud-distance').textContent = `Sisa Jarak: ${remDist} m`;
+
+            const pPct = Math.min(100, Math.max(0, (player.distance / GameState.totalDistance) * 100));
+            const ai1Pct = Math.min(100, Math.max(0, (ai1.distance / GameState.totalDistance) * 100));
+            const ai2Pct = Math.min(100, Math.max(0, (ai2.distance / GameState.totalDistance) * 100));
+
+            document.getElementById('hud-progress-fill').style.width = `${Math.max(pPct, GameState.mode === 'versus' ? ai1Pct : 0)}%`;
+            document.getElementById('marker-player').style.left = `${pPct}%`;
+            document.getElementById('marker-ai1').style.left = `${ai1Pct}%`;
+            document.getElementById('marker-ai2').style.left = `${ai2Pct}%`;
+
+            // Speedometer & Needle Angle (-75 deg to +75 deg)
+            const speedVal = Math.round(player.speedKmh);
+            document.getElementById('hud-speed').textContent = speedVal;
+            const clampedSpeed = Math.min(180, Math.max(30, speedVal));
+            const angle = -75 + ((clampedSpeed - 30) / 150) * 150;
+            document.getElementById('speed-needle').setAttribute('transform', `rotate(${angle} 60 60)`);
+
+            // 2 Player Split-Screen HUD updates
+            if (GameState.mode === 'versus') {
+                let p2Rank = 1;
+                if (player.distance > ai1.distance) p2Rank++;
+                if (ai2.distance > ai1.distance) p2Rank++;
+
+                document.getElementById('p1-hud-rank').textContent = `#${rank}`;
+                document.getElementById('p1-hud-speed').textContent = `${Math.round(player.speedKmh)} KM/J`;
+                document.getElementById('p1-hud-score').textContent = `${GameState.score} Poin`;
+
+                document.getElementById('p2-hud-rank').textContent = `#${p2Rank}`;
+                document.getElementById('p2-hud-speed').textContent = `${Math.round(ai1.speedKmh)} KM/J`;
+                document.getElementById('p2-hud-score').textContent = `${GameState.p2.score} Poin`;
+            }
+        }
+
+        function finishRace() {
+            GameState.screen = 'finished';
+            AudioEngine.playFinish();
+
+            const [player, ai1, ai2] = GameState.racers;
+            let rank = 1;
+            let totalCars = 1;
+            if (GameState.mode !== 'solo') {
+                totalCars = 3;
+                if (ai1.distance > player.distance) rank++;
+                if (ai2.distance > player.distance) rank++;
+            }
+
+            const acc = GameState.questionCount > 0
+                ? Math.round((GameState.correctCount / GameState.questionCount) * 100)
+                : 0;
+
+            const timeStr = document.getElementById('hud-time').textContent;
+
+            if (GameState.mode === 'versus') {
+                const p1Win = player.distance >= ai1.distance;
+                const winnerName = p1Win ? GameState.playerName : GameState.player2Name;
+                const winnerScore = p1Win ? GameState.score : GameState.p2.score;
+                const p2Acc = GameState.p2.questionCount > 0
+                    ? Math.round((GameState.p2.correctCount / GameState.p2.questionCount) * 100)
+                    : 0;
+                const winnerAcc = p1Win ? acc : p2Acc;
+
+                document.getElementById('finish-trophy').textContent = '🏆';
+                document.getElementById('finish-title').textContent = `${winnerName.toUpperCase()} MENANG!`;
+                document.getElementById('finish-subtitle').textContent =
+                    `Duel Split-Screen selesai! Skor ${GameState.playerName}: ${GameState.score} • Skor ${GameState.player2Name}: ${GameState.p2.score}`;
+
+                document.getElementById('finish-rank').textContent = p1Win ? 'P1 Juara' : 'P2 Juara';
+                document.getElementById('finish-time').textContent = timeStr;
+                document.getElementById('finish-score').textContent = `${winnerScore}`;
+                document.getElementById('finish-acc').textContent = `${winnerAcc}%`;
+
+                saveLeaderboardEntry({
+                    name: `${winnerName} (Duel 2P)`,
+                    score: winnerScore,
+                    rank: '1/2',
+                    acc: `${winnerAcc}%`,
+                    mode: '2P SPLIT',
+                    grade: `Kelas ${GameState.grade}`
+                });
+
+                document.getElementById('modal-finish').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('finish-rank').textContent = `#${rank} / ${totalCars}`;
+            document.getElementById('finish-time').textContent = timeStr;
+            document.getElementById('finish-score').textContent = GameState.score;
+            document.getElementById('finish-acc').textContent = `${acc}%`;
+
+            if (rank === 1) {
+                document.getElementById('finish-trophy').textContent = '🏆';
+                document.getElementById('finish-title').textContent = 'JUARA 1!';
+                document.getElementById('finish-subtitle').textContent =
+                    `Selamat ${GameState.playerName}! Kamu menjadi pembalap matematika tercepat!`;
+            } else if (rank === 2) {
+                document.getElementById('finish-trophy').textContent = '🥈';
+                document.getElementById('finish-title').textContent = 'POSISI KE-2!';
+                document.getElementById('finish-subtitle').textContent =
+                    `Balapan yang sengit, ${GameState.playerName}! Sedikit lagi menuju podium pertama!`;
+            } else {
+                document.getElementById('finish-trophy').textContent = '🥉';
+                document.getElementById('finish-title').textContent = 'POSISI KE-3!';
+                document.getElementById('finish-subtitle').textContent =
+                    `Tetap semangat berlatih berhitung cepat, ${GameState.playerName}!`;
+            }
+
+            saveLeaderboardEntry({
+                name: GameState.playerName,
+                score: GameState.score,
+                rank: `${rank}/${totalCars}`,
+                acc: `${acc}%`,
+                mode: GameState.mode.toUpperCase(),
+                grade: `Kelas ${GameState.grade}`
+            });
+
+            document.getElementById('modal-finish').classList.remove('hidden');
+        }
+
+        function togglePause() {
+            if (GameState.screen === 'racing') {
+                GameState.screen = 'paused';
+                document.getElementById('modal-pause').classList.remove('hidden');
+            } else if (GameState.screen === 'paused') {
+                GameState.screen = 'racing';
+                document.getElementById('modal-pause').classList.add('hidden');
+            }
+        }
+
+        function restartRace() {
+            document.getElementById('modal-pause').classList.add('hidden');
+            document.getElementById('modal-finish').classList.add('hidden');
+            startRace();
+        }
+
+        function backToMenu() {
+            GameState.screen = 'menu';
+            document.getElementById('modal-pause').classList.add('hidden');
+            document.getElementById('modal-finish').classList.add('hidden');
+            document.getElementById('race-hud').classList.add('hidden');
+            document.getElementById('camera-hint').classList.add('hidden');
+            document.getElementById('menu-screen').classList.remove('hidden');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        /* Leaderboard LocalStorage */
+        function getLeaderboardData() {
+            try {
+                const raw = localStorage.getItem('math_speed_race_lb');
+                if (raw) return JSON.parse(raw);
+            } catch (e) {}
+            return [
+                { name: 'Juara Cilik', score: 950, rank: '1/3', acc: '100%', mode: 'QUICK', grade: 'Kelas 1-2' },
+                { name: 'Racer Pintar', score: 820, rank: '1/3', acc: '92%', mode: 'CHAMPIONSHIP', grade: 'Kelas 3-4' },
+                { name: 'Bintang SD', score: 680, rank: '2/3', acc: '88%', mode: 'QUICK', grade: 'Kelas 1-2' }
+            ];
+        }
+
+        function saveLeaderboardEntry(entry) {
+            try {
+                const list = getLeaderboardData();
+                list.push(entry);
+                list.sort((a, b) => b.score - a.score);
+                localStorage.setItem('math_speed_race_lb', JSON.stringify(list.slice(0, 10)));
+            } catch (e) {}
+        }
+
+        function openLeaderboard() {
+            const list = getLeaderboardData();
+            const container = document.getElementById('leaderboard-list');
+            if (list.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-slate-400 font-bold text-sm">Belum ada riwayat balapan. Ayo mulai balapan!</div>`;
+            } else {
+                container.innerHTML = list.map((item, idx) => `
+                    <div class="flex items-center justify-between bg-slate-100 rounded-2xl px-4 py-2.5 border border-slate-200">
+                        <div class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-full ${idx === 0 ? 'bg-amber-400 text-white' : 'bg-slate-300 text-slate-700'} font-extrabold text-xs flex items-center justify-center">
+                                ${idx + 1}
+                            </span>
+                            <div>
+                                <div class="font-extrabold text-slate-800 text-sm">${item.name}</div>
+                                <div class="text-[11px] font-bold text-slate-500">${item.grade} • ${item.mode} • Posisi ${item.rank}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-display font-bold text-base text-emerald-600">${item.score} Poin</div>
+                            <div class="text-[10px] font-extrabold text-sky-600">Akurasi ${item.acc}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            openModal('modal-leaderboard');
+        }
+
+        function clearLeaderboard() {
+            try {
+                localStorage.removeItem('math_speed_race_lb');
+            } catch (e) {}
+            openLeaderboard();
+        }
+
+        /* Camera Orbit Mouse / Touch Listeners */
+        function setupCameraInteraction(domEl) {
+            domEl.addEventListener('mousedown', (e) => {
+                camOrbit.isDragging = true;
+                camOrbit.prevX = e.clientX;
+                camOrbit.prevY = e.clientY;
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!camOrbit.isDragging) return;
+                const dx = e.clientX - camOrbit.prevX;
+                const dy = e.clientY - camOrbit.prevY;
+                camOrbit.prevX = e.clientX;
+                camOrbit.prevY = e.clientY;
+                camOrbit.yawOffset = Math.max(-0.8, Math.min(0.8, camOrbit.yawOffset - dx * 0.005));
+                camOrbit.pitchOffset = Math.max(-1.8, Math.min(4.0, camOrbit.pitchOffset + dy * 0.02));
+            });
+            window.addEventListener('mouseup', () => {
+                camOrbit.isDragging = false;
+            });
+            domEl.addEventListener('dblclick', () => {
+                camOrbit.yawOffset = 0;
+                camOrbit.pitchOffset = 0;
+            });
+
+            // Touch support
+            domEl.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    camOrbit.isDragging = true;
+                    camOrbit.prevX = e.touches[0].clientX;
+                    camOrbit.prevY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+            window.addEventListener('touchmove', (e) => {
+                if (!camOrbit.isDragging || e.touches.length !== 1) return;
+                const dx = e.touches[0].clientX - camOrbit.prevX;
+                const dy = e.touches[0].clientY - camOrbit.prevY;
+                camOrbit.prevX = e.touches[0].clientX;
+                camOrbit.prevY = e.touches[0].clientY;
+                camOrbit.yawOffset = Math.max(-0.8, Math.min(0.8, camOrbit.yawOffset - dx * 0.005));
+                camOrbit.pitchOffset = Math.max(-1.8, Math.min(4.0, camOrbit.pitchOffset + dy * 0.02));
+            }, { passive: true });
+            window.addEventListener('touchend', () => {
+                camOrbit.isDragging = false;
+            });
+        }
+
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            if (cameraP2) {
+                cameraP2.aspect = (window.innerWidth / 2) / window.innerHeight;
+                cameraP2.updateProjectionMatrix();
+            }
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        /* =========================================================================
+           5. MAIN ANIMATION LOOP
+           ========================================================================= */
+        let lastFrameTime = performance.now();
+
+        function animate(now = performance.now()) {
+            requestAnimationFrame(animate);
+            const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+            lastFrameTime = now;
+
+            if (GameState.screen === 'racing') {
+                GameState.elapsedTime += dt;
+                updateRacerPhysics(dt);
+                updateHUD();
+            }
+
+            updateRacer3DPositions(dt);
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            if (GameState.screen !== 'menu' && GameState.mode === 'versus') {
+                // Split-screen dual viewport rendering on the exact same 3D scene & track
+                renderer.setScissorTest(true);
+
+                // Left Viewport: Player 1 (Red Car)
+                renderer.setViewport(0, 0, w / 2, h);
+                renderer.setScissor(0, 0, w / 2, h);
+                camera.aspect = (w / 2) / h;
+                camera.updateProjectionMatrix();
+                renderer.render(scene, camera);
+
+                // Right Viewport: Player 2 (Cyan Car)
+                renderer.setViewport(w / 2, 0, w / 2, h);
+                renderer.setScissor(w / 2, 0, w / 2, h);
+                cameraP2.aspect = (w / 2) / h;
+                cameraP2.updateProjectionMatrix();
+                renderer.render(scene, cameraP2);
+
+                renderer.setScissorTest(false);
+            } else {
+                // Standard full-screen rendering
+                renderer.setScissorTest(false);
+                renderer.setViewport(0, 0, w, h);
+                if (camera.aspect !== w / h) {
+                    camera.aspect = w / h;
+                    camera.updateProjectionMatrix();
+                }
+                renderer.render(scene, camera);
+            }
+        }
+
+        window.onload = function () {
+            init3DWorld();
+            animate();
+        };
+    </script>
+</body>
+</html>
