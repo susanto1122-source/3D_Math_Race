@@ -167,7 +167,7 @@
                     <div class="text-2xl sm:text-3xl mb-1">🏁</div>
                     <div class="font-extrabold text-slate-800 text-sm sm:text-base">Quick Race</div>
                     <p class="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug">
-                        Balapan 1 putaran melawan 2 mobil sport AI
+                        Balapan cepat melawan 2 mobil sport AI
                     </p>
                 </button>
 
@@ -185,7 +185,7 @@
                     <div class="text-2xl sm:text-3xl mb-1">🏆</div>
                     <div class="font-extrabold text-slate-800 text-sm sm:text-base">Championship</div>
                     <p class="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug">
-                        Balapan panjang 2 putaran, soal makin menantang
+                        Balapan kejuaraan, soal makin menantang
                     </p>
                 </button>
 
@@ -237,7 +237,7 @@
                 </div>
             </div>
 
-            <!-- Configuration Grid Row 2 (Player 2 Name & AI Difficulty) -->
+            <!-- Configuration Grid Row 2 (Player 2 Name, Lap Count & AI Difficulty) -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
                 <!-- Nama Pemain 2 (Tampil saat mode 2 Player) -->
                 <div id="p2-name-container" class="hidden bg-sky-50/90 border-2 border-sky-300 rounded-2xl p-3 shadow-sm">
@@ -248,6 +248,19 @@
                         class="w-full bg-white border border-sky-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-sky-500" />
                 </div>
 
+                <!-- Banyaknya Putaran -->
+                <div class="bg-slate-50/90 border border-slate-200 rounded-2xl p-3">
+                    <label class="block text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                        🔄 BANYAKNYA PUTARAN
+                    </label>
+                    <select id="select-laps" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-sky-500">
+                        <option value="1" selected>1 Putaran (1.200 m)</option>
+                        <option value="2">2 Putaran (2.400 m)</option>
+                        <option value="3">3 Putaran (3.600 m)</option>
+                    </select>
+                </div>
+
+                <!-- Kesulitan Lawan AI -->
                 <div class="bg-slate-50/90 border border-slate-200 rounded-2xl p-3">
                     <label class="block text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
                         KESULITAN LAWAN AI
@@ -340,7 +353,7 @@
             <!-- Top-Center Track Progress Pill -->
             <div class="pointer-events-auto bg-white/95 backdrop-blur-md rounded-2xl px-4 py-2 shadow-lg border border-white w-full sm:w-96 order-3 sm:order-2">
                 <div class="flex items-center justify-between text-[10px] sm:text-xs font-extrabold text-slate-600 mb-1.5">
-                    <span id="hud-mode-title" class="uppercase">QUICK RACE (1 PUTARAN)</span>
+                    <span id="hud-mode-title" class="uppercase">QUICK RACE • LAP 1/1</span>
                     <span id="hud-distance">Sisa Jarak: 1200 m</span>
                 </div>
                 <!-- Progress Track Bar with Car Markers -->
@@ -817,6 +830,13 @@
             } else {
                 p2Container.classList.add('hidden');
                 p1Label.textContent = '🏎️ NAMA PEMAIN 1';
+            }
+
+            // Set default lap recommendation when switching mode (user can still change 1, 2, or 3 freely)
+            const lapsSelect = document.getElementById('select-laps');
+            if (lapsSelect) {
+                if (mode === 'championship') lapsSelect.value = '2';
+                else lapsSelect.value = '1';
             }
 
             AudioEngine.init();
@@ -1607,26 +1627,22 @@
             GameState.operation = document.getElementById('select-operation').value;
             GameState.aiDiff = document.getElementById('select-ai-diff').value;
 
+            const selectedLaps = parseInt(document.getElementById('select-laps').value, 10) || 1;
+            GameState.laps = Math.min(3, Math.max(1, selectedLaps));
+            GameState.totalDistance = GameState.trackLength * GameState.laps;
+
             const isVersus = GameState.mode === 'versus';
 
-            // Configure laps & distance by mode
-            if (GameState.mode === 'championship') {
-                GameState.laps = 2;
-                GameState.totalDistance = 2200;
-                document.getElementById('hud-mode-title').textContent = 'CHAMPIONSHIP (2 PUTARAN)';
-            } else if (GameState.mode === 'solo') {
-                GameState.laps = 1;
-                GameState.totalDistance = 1100;
-                document.getElementById('hud-mode-title').textContent = 'SOLO TIME ATTACK (1 PUTARAN)';
-            } else if (isVersus) {
-                GameState.laps = 1;
-                GameState.totalDistance = 1100;
-                document.getElementById('hud-mode-title').textContent = 'DUEL 2 PLAYER SPLIT-SCREEN (1 PUTARAN)';
-            } else {
-                GameState.laps = 1;
-                GameState.totalDistance = 1100;
-                document.getElementById('hud-mode-title').textContent = 'QUICK RACE (1 PUTARAN)';
-            }
+            // Configure mode title with selected laps
+            const modeLabelMap = {
+                quick: 'QUICK RACE',
+                versus: 'DUEL 2 PLAYER',
+                championship: 'CHAMPIONSHIP',
+                solo: 'SOLO TIME ATTACK'
+            };
+            const modeTitle = modeLabelMap[GameState.mode] || 'QUICK RACE';
+            document.getElementById('hud-mode-title').textContent =
+                `${modeTitle} (${GameState.laps} PUTARAN)`;
 
             // Update question subheader
             const opNames = {
@@ -2140,7 +2156,9 @@
                 ? Math.max(player.distance, ai1.distance)
                 : player.distance;
             const remDist = Math.max(0, Math.ceil(GameState.totalDistance - leadDistance));
-            document.getElementById('hud-distance').textContent = `Sisa Jarak: ${remDist} m`;
+            const currentLap = Math.min(GameState.laps, Math.floor(leadDistance / GameState.trackLength) + 1);
+            document.getElementById('hud-distance').textContent =
+                `Lap ${currentLap}/${GameState.laps} • Sisa: ${remDist} m`;
 
             const pPct = Math.min(100, Math.max(0, (player.distance / GameState.totalDistance) * 100));
             const ai1Pct = Math.min(100, Math.max(0, (ai1.distance / GameState.totalDistance) * 100));
